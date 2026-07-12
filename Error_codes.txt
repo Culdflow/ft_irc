@@ -1,0 +1,58 @@
+CODES D'ERREUR IRC (RFC 2812)
+========================================================
+
+ERREURS DE CONNEXION / ENREGISTREMENT
+----------------------------------------
+401  ERR_NOSUCHNICK          Pseudo/canal inexistant
+402  ERR_NOSUCHSERVER        Serveur inexistant
+403  ERR_NOSUCHCHANNEL       Canal inexistant
+404  ERR_CANNOTSENDTOCHAN    Impossible d'envoyer un message au canal
+405  ERR_TOOMANYCHANNELS     Trop de canaux rejoints
+406  ERR_WASNOSUCHNICK       Historique WHOWAS vide
+407  ERR_TOOMANYTARGETS      Trop de destinataires
+409  ERR_NOORIGIN            Pas d'origine specifiee (PING/PONG)
+411  ERR_NORECIPIENT         Pas de destinataire donne
+412  ERR_NOTEXTTOSEND        Pas de texte a envoyer
+421  ERR_UNKNOWNCOMMAND      Commande inconnue
+422  ERR_NOMOTD              Pas de MOTD
+431  ERR_NONICKNAMEGIVEN     Pas de pseudo donne
+432  ERR_ERRONEUSNICKNAME    Pseudo invalide
+433  ERR_NICKNAMEINUSE       Pseudo deja utilise
+436  ERR_NICKCOLLISION       Collision de pseudo
+
+ERREURS LIEES AUX CANAUX
+----------------------------------------
+441  ERR_USERNOTINCHANNEL    L'utilisateur n'est pas dans le canal
+442  ERR_NOTONCHANNEL        Toi-meme pas sur le canal
+443  ERR_USERONCHANNEL       Utilisateur deja sur le canal (invite)
+451  ERR_NOTREGISTERED       Client pas encore enregistre (PASS/NICK/USER manquant)
+461  ERR_NEEDMOREPARAMS      Pas assez de parametres
+462  ERR_ALREADYREGISTRED    Deja enregistre (double USER/PASS)
+464  ERR_PASSWDMISMATCH      Mauvais mot de passe serveur
+465  ERR_YOUREBANNEDCREEP    Banni du serveur
+471  ERR_CHANNELISFULL       Canal plein (MODE +l)
+472  ERR_UNKNOWNMODE         Mode inconnu
+473  ERR_INVITEONLYCHAN      Canal sur invitation seulement (+i)
+474  ERR_BANNEDFROMCHAN      Banni du canal
+475  ERR_BADCHANNELKEY       Mauvaise cle de canal (+k)
+476  ERR_BADCHANMASK         Masque de canal invalide
+
+ERREURS DE PERMISSIONS
+----------------------------------------
+481  ERR_NOPRIVILEGES        Pas de privileges d'operateur
+482  ERR_CHANOPRIVSNEEDED    Besoin d'etre operateur sur le canal
+483  ERR_CANTKILLSERVER      Impossible de tuer un serveur
+
+REPONSES DE SUCCES (ENREGISTREMENT)
+----------------------------------------
+001  RPL_WELCOME             Bienvenue sur le reseau IRC
+002  RPL_YOURHOST            Info sur le serveur/host
+003  RPL_CREATED             Date de creation du serveur
+004  RPL_MYINFO              Nom du serveur, version, modes disponibles
+005  RPL_ISUPPORT            Fonctionnalites supportees par le serveur
+
+CODES LES PLUS UTILISES POUR FT_IRC
+----------------------------------------
+401, 403, 404, 421, 431, 432, 433,
+441, 442, 443, 461, 462, 464,
+471, 472, 473, 474, 475, 476, 482
