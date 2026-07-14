@@ -15,6 +15,8 @@ class serv
 		std::string		_password;
 		sockaddr_in		_socket;
 		int				_socketFd;
+		fd_set			_readySockets;
+		fd_set			_currentSockets;
 
 		void		createSocket();
 		void		init();

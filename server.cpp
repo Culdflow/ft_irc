@@ -1,4 +1,4 @@
-#include "irc.hpp"
+#include "server.hpp"
 
 serv::serv(char *port, char *pass)
 {
@@ -33,15 +33,52 @@ void serv::createSocket()
 	this->_socket.sin_port = htons(this->_port);
 	this->_socket.sin_addr.s_addr = INADDR_ANY;
 	bind(this->_socketFd, (struct sockaddr*)&this->_socket, sizeof(this->_socket));
+	listen(this->_socketFd, 0);
+	FD_ZERO(&this->_currentSockets);
+	FD_SET(this->_socketFd, &this->_currentSockets);
+	this->init();
 }
 
 void	serv::init()
 {
-	int clientSocket = accept(server.getSocketFd(), NULL, NULL);
+	while (true)
+	{
+		this->_readySockets = this->_currentSockets;
+		if (select(FD_SETSIZE, &this->_readySockets, NULL, NULL, NULL) < 0)
+		{
+			std::cerr << "errrrorrrrr select" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		for (int i = 0; i < FD_SETSIZE; i++)
+		{
+			if (FD_ISSET(i, &this->_readySockets))
+			{
+				if (i == this->_socketFd)
+				{
+					int client = accept(this->_socketFd, NULL, NULL);
+					struct sockaddr_storage addr;
 
-	char buffer[1024] = { 0 };
-	recv(clientSocket, buffer, sizeof(buffer), 0);
-	std::cout << "Message from client: " << buffer << std::endl;
+					socklen_t addr_len = sizeof(addr);
+
+					if (getpeername(client, (struct sockaddr*)&addr, &addr_len) == -1)
+					{
+						std::cerr << "errrrorrrrr getpeername" << std::endl;
+						close(client);
+						return;
+					}
+					send(client, "new client\n", 11, 0);
+					FD_SET(client, &this->_currentSockets);
+				}
+				else
+				{
+					send(i, "not new client\n", 15, 0);
+					char buffer[1024];
+					recv(i, &buffer, sizeof(buffer), 0);
+					std::cout << buffer << std::endl;
+				}
+			}
+		}
+	}
 }
 
 sockaddr_in	serv::getSocket()const
