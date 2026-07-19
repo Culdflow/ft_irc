@@ -27,6 +27,16 @@ struct Message {
     std::vector<std::string> params; 
 };
 
+struct Channel {
+	std::string	topic;
+	std::vector<client> Users;
+	std::vector<client>	Operators;
+	bool				InviteOnly;
+	bool				RestrictTopic;
+	bool				SetPasswd;
+	int					UserLimit;
+};
+
 // / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
 //struct a modifier, uniquement pour avancer sur le parsing
 struct Client {
@@ -42,5 +52,7 @@ void test_parsing(std::string& s);
 
 // parsing
 void parseArguments(int ac, char **av);
+
+Message parseCommand(std::string& raw);
 
 #endif

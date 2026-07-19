@@ -1,6 +1,7 @@
 #pragma once
 
 #include "client.hpp"
+#include "ft_irc.hpp"
 
 #include <cstring>
 #include <iostream>
@@ -24,6 +25,7 @@ class serv
 		fd_set				_currentSockets;
 		std::vector<client>	_clientList;
 
+		//PRIVATE METHODS
 		void		createSocket();
 		void		init();
 	public:
@@ -35,7 +37,11 @@ class serv
 		//DESTRUCTORS
 		~serv();
 
-		//getter
+
+		//METHODS
+		void	recvMsg(client cl, Message msg);
+
+		//GETTER
 		sockaddr_in		getSocket()const;
 		unsigned int 	getPort()const;
 		std::string		getPassword()const;

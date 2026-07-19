@@ -1,17 +1,20 @@
 #include "server.hpp"
 
+//HELPER-----------------------------------------------------------
 
 std::vector<std::string> split(const std::string& s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::stringstream ss(s);
-    std::string token;
+	std::vector<std::string> tokens;
+	std::stringstream ss(s);
+	std::string token;
 
-    while (std::getline(ss, token, delimiter)) {
-        tokens.push_back(token);
-    }
+	while (std::getline(ss, token, delimiter)) {
+		tokens.push_back(token);
+	}
 
-    return tokens;
+	return tokens;
 }
+
+//CONSTRUCTORS------------------------------------------------------
 
 serv::serv(char *port, char *pass)
 {
@@ -40,6 +43,8 @@ serv::serv(const serv& src)
 		*this = src;
 }
 
+//OPERATORS---------------------------------------------------------
+
 serv&	serv::operator=(const serv& src)
 {
 	this->_password = src._password;
@@ -52,10 +57,7 @@ serv&	serv::operator=(const serv& src)
 	return (*this);
 }
 
-serv::~serv()
-{
-	std::cout << "serv destructor called" << std::endl;
-}
+//PRIVATE METHODS----------------------------------------------------
 
 void serv::createSocket()
 {
@@ -99,23 +101,41 @@ void	serv::init()
 					}
 					client clie(cl);
 					this->_clientList.push_back(clie);
-					send(cl, "new cl\n", 11, 0);
 					FD_SET(cl, &this->_currentSockets);
 				}
 				else
 				{
-					send(i, "not new client\n", 15, 0);
+					client cl;
+					for (std::vector<client>::iterator c = this->_clientList.begin(); c < this->_clientList.end(); i++)
+					{
+						if ((*c).getSocketFd() == i)
+							cl = *c;
+					}
 					char buffer[1024];
 					recv(i, &buffer, sizeof(buffer), 0);
 					std::string bufferStr = buffer;
-					std::vector<std::string> splt = split(bufferStr, '\r');
-					for (unsigned long i = 0; i < splt.size(); i++)
-						std::cout << splt[i] << "  /  " << std::endl;
+					Message msg = parseCommand(bufferStr);
 				}
 			}
 		}
 	}
 }
+
+//METHODS
+
+void	serv::recvMsg(client cl, Message msg)
+{
+	if (!cl.isNameSet() || !cl.isNickSet() || !cl.isPaswdSent())
+	{
+		//gere la creation du client avec les msgs de base
+	}
+	else
+	{
+		//gere tous les autres msgs
+	}
+}
+
+//GETTER-------------------------------------------------------------
 
 sockaddr_in	serv::getSocket()const
 {
@@ -137,7 +157,16 @@ int				serv::getSocketFd()const
 	return (this->_socketFd);
 }
 
+//EXCEPTIONS-------------------------------------------------------------
+
 const char* serv::PortWrongError::what(void) const throw()
 {
 	return ("[Error] : PORT NUMBER WRONG (must be a number between 1 and 65535)");
+}
+
+//DESTRUCTORS--------------------------------------------------------------
+
+serv::~serv()
+{
+	std::cout << "serv destructor called" << std::endl;
 }
