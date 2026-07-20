@@ -111,10 +111,11 @@ void	serv::init()
 						if ((*c).getSocketFd() == i)
 							cl = *c;
 					}
-					char buffer[1024];
-					recv(i, &buffer, sizeof(buffer), 0);
-					std::string bufferStr = buffer;
-					Message msg = parseCommand(bufferStr);
+					//char buffer[1024];
+					//recv(i, &buffer, sizeof(buffer), 0);
+					//std::string bufferStr = buffer;
+					//Message msg = parseCommand(bufferStr);
+					socketBufferParsing(cl);
 				}
 			}
 		}

@@ -29,8 +29,10 @@ client::client(const client& src)
 client&	client::operator=(const client& src)
 {
 	this->_name = src._name;
-	this->_nick = src._name;
+	this->_nick = src._nick;
 	this->_socketFd = src._socketFd;
+	this->_paswdSent = src._paswdSent;
+	this->_inputBuf = src._inputBuf;
 	return (*this);
 }
 
@@ -56,6 +58,11 @@ bool	client::isPaswdSent()const
 int		client::getSocketFd()const
 {
 	return (this->_socketFd);
+}
+
+std::string& client::getInputBuf()
+{
+    return (this->_inputBuf);
 }
 
 //SETTER----------------------------------------

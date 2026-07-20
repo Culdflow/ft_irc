@@ -6,7 +6,7 @@
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:47 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/10 16:48:43 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/20 17:15:28 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 #include <sys/socket.h>
 #include <string>
 #include <vector>
+
+#include "client.hpp"
 
 struct Message {
     std::string prefix;             
@@ -37,13 +39,6 @@ struct Channel {
 	int					UserLimit;
 };
 
-// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
-//struct a modifier, uniquement pour avancer sur le parsing
-struct Client {
-    int fd_socket;
-    std::string inputBuf;
-    
-};
 
 void test_parsing(std::string& s);
 
@@ -52,6 +47,7 @@ void test_parsing(std::string& s);
 
 // parsing
 void parseArguments(int ac, char **av);
+void socketBufferParsing(client& Client);
 
 Message parseCommand(std::string& raw);
 

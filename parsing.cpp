@@ -6,7 +6,7 @@
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:34 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/10 17:02:09 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/20 17:16:16 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,28 +53,27 @@ void parseArguments(int ac, char **av) {
 // reconstituer la commande a partir de ce qui est recu
 // manque : le client (sous quelle forme ? Je mets une struct en attendant mais surement une classe), son socket et son buffer d'input
 
-// void socketBufferParsing(Client& client) {
-//     char buf[512];
-//     int n = recv(client.fd_socket, buf, sizeof(buf), 0);
+void socketBufferParsing(client& Client) {
+    char buf[512];
+    size_t n = recv(Client.getSocketFd(), buf, sizeof(buf), 0);
 
-//     if (n <= 0) {
-//         // pas de message envoyé, quelle gestion ? 
-//         // dans le parsing je dirais juste return car normalement utilise avec poll()/POLLIN, on envoie au parsing que quand y a bien un message recu
-//         return;
-//     }
-//     client.inputBuf.append(buf, n);
-//     size_t pos;
-//     while (pos = client.inputBuf.find('\n') != std::string::npos) {
-//         std::string cmd = client.inputBuf.substr(0, pos);
-//         if (!cmd.empty() && cmd[cmd.size() - 1] == '\\r')
-//             cmd.erase(cmd.size() - 1);
-//         client.inputBuf.erase(0, pos + 1);
-//         if (!cmd.empty())
-//             Message msg = parseCommand(cmd);
-            
-//         //en realite ca sera plutot surement dans une classe ? mais je mets ca en attendant pour les tests
-//     }
-// }
+    if (n <= 0) {
+        // pas de message envoyé, quelle gestion ? 
+        // dans le parsing je dirais juste return car normalement utilise avec poll()/POLLIN, on envoie au parsing que quand y a bien un message recu
+        return;
+    }
+    Client.getInputBuf().append(buf, n);
+    size_t pos;
+    while ((pos = Client.getInputBuf().find('\n')) != std::string::npos) {
+        std::string cmd = Client.getInputBuf().substr(0, pos);
+        if (!cmd.empty() && cmd[cmd.size() - 1] == '\r')
+            cmd.erase(cmd.size() - 1);
+        Client.getInputBuf().erase(0, pos + 1);
+        if (!cmd.empty())
+            Message msg = parseCommand(cmd);
+        //en realite ca sera plutot surement dans une classe ? mais je mets ca en attendant pour les tests
+    }
+}
 
 // [':' prefix - optionnel SPACE] command [SPACE params] [SPACE ':' trailing]
 // return un msg vide en cas d'erreur
@@ -128,9 +127,6 @@ Message parseCommand(std::string& raw) {
     }
     return msg;
 }
-
-// pb de trailing, continue de tout decomposer en differents param 
-
 
 void test_parsing(std::string& s) {
     std::cout << "je suis rentre : string = " << s << "\n";
