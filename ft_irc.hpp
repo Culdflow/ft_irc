@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_irc.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
+/*   By: jpecquer <jpecquer@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:47 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/20 17:15:28 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/24 16:26:31 by jpecquer         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,10 +26,10 @@
 struct Message {
     std::string prefix;             
     std::string command;           
-    std::vector<std::string> params; 
+    std::vector<std::string> params; 	
 };
 
-struct Channel {
+typedef struct Channel {
 	std::string	topic;
 	std::vector<client> Users;
 	std::vector<client>	Operators;
@@ -37,7 +37,7 @@ struct Channel {
 	bool				RestrictTopic;
 	bool				SetPasswd;
 	int					UserLimit;
-};
+}	t_channel;
 
 
 void test_parsing(std::string& s);

@@ -24,6 +24,7 @@ class serv
 		fd_set				_readySockets;
 		fd_set				_currentSockets;
 		std::vector<client>	_clientList;
+		std::vector<t_channel> _channelList;
 
 		//PRIVATE METHODS
 		void		createSocket();

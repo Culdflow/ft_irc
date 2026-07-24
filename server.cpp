@@ -77,11 +77,13 @@ void	serv::init()
 	while (true)
 	{
 		this->_readySockets = this->_currentSockets;
+		std::cout << "Select b" << std::endl;
 		if (select(FD_SETSIZE, &this->_readySockets, NULL, NULL, NULL) < 0)
 		{
 			std::cerr << "errrrorrrrr select" << std::endl;
 			exit(EXIT_FAILURE);
 		}
+		std::cout << "Select a" << std::endl;
 		for (int i = 0; i < FD_SETSIZE; i++)
 		{
 			if (FD_ISSET(i, &this->_readySockets))
@@ -106,15 +108,18 @@ void	serv::init()
 				else
 				{
 					client cl;
-					for (std::vector<client>::iterator c = this->_clientList.begin(); c < this->_clientList.end(); i++)
+					for (std::vector<client>::iterator c = this->_clientList.begin(); c != this->_clientList.end(); c++)
 					{
 						if ((*c).getSocketFd() == i)
 							cl = *c;
 					}
-					//char buffer[1024];
-					//recv(i, &buffer, sizeof(buffer), 0);
-					//std::string bufferStr = buffer;
-					//Message msg = parseCommand(bufferStr);
+					char buffer[1024];
+					std::cout << "Attention jecout elekip" << std::endl;
+					recv(i, &buffer, sizeof(buffer), 0);
+					std::string bufferStr = buffer;
+					std::cout << buffer << std::endl;
+					Message msg = parseCommand(bufferStr);
+					this->recvMsg(cl, msg);
 					socketBufferParsing(cl);
 				}
 			}
@@ -126,6 +131,11 @@ void	serv::init()
 
 void	serv::recvMsg(client cl, Message msg)
 {
+	std::cout << "prefix: " << msg.prefix << std::endl;
+	std::cout << "command: " << msg.command << std::endl;
+	for (std::vector<std::string>::iterator it = msg.params.begin(); it != msg.params.end(); it++)
+		std::cout << "param: " << *it << std::endl;
+	
 	if (!cl.isNameSet() || !cl.isNickSet() || !cl.isPaswdSent())
 	{
 		//gere la creation du client avec les msgs de base
