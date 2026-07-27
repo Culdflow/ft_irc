@@ -6,16 +6,11 @@
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:34 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/20 17:16:16 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/27 16:02:18 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_irc.hpp"
-
-//parsing <port> <password> 
-    // <port> 
-        // nb entier entre 1 et 65535
-        // est ce qu'on accepte n'importe quel port ?
 
 static bool parsePort(const std::string& argPort) {
     if (argPort.empty())
@@ -53,15 +48,13 @@ void parseArguments(int ac, char **av) {
 // reconstituer la commande a partir de ce qui est recu
 // manque : le client (sous quelle forme ? Je mets une struct en attendant mais surement une classe), son socket et son buffer d'input
 
-void socketBufferParsing(client& Client) {
+std::vector<Message> socketBufferParsing(client& Client) {
     char buf[512];
-    size_t n = recv(Client.getSocketFd(), buf, sizeof(buf), 0);
+    int n = recv(Client.getSocketFd(), buf, sizeof(buf), 0);
+    std::vector<Message> vecMsgs;
 
-    if (n <= 0) {
-        // pas de message envoyé, quelle gestion ? 
-        // dans le parsing je dirais juste return car normalement utilise avec poll()/POLLIN, on envoie au parsing que quand y a bien un message recu
-        return;
-    }
+    if (n <= 0)
+        return vecMsgs;
     Client.getInputBuf().append(buf, n);
     size_t pos;
     while ((pos = Client.getInputBuf().find('\n')) != std::string::npos) {
@@ -69,10 +62,12 @@ void socketBufferParsing(client& Client) {
         if (!cmd.empty() && cmd[cmd.size() - 1] == '\r')
             cmd.erase(cmd.size() - 1);
         Client.getInputBuf().erase(0, pos + 1);
-        if (!cmd.empty())
+        if (!cmd.empty()) {
             Message msg = parseCommand(cmd);
-        //en realite ca sera plutot surement dans une classe ? mais je mets ca en attendant pour les tests
+            vecMsgs.push_back(msg);
+        }
     }
+    return vecMsgs;
 }
 
 // [':' prefix - optionnel SPACE] command [SPACE params] [SPACE ':' trailing]
@@ -126,30 +121,4 @@ Message parseCommand(std::string& raw) {
         }
     }
     return msg;
-}
-
-void test_parsing(std::string& s) {
-    std::cout << "je suis rentre : string = " << s << "\n";
-    size_t pos;
-    while ((pos = s.find('\n')) != std::string::npos) {
-        std::string cmd = s.substr(0, pos);
-        if (!cmd.empty() && cmd[cmd.size() - 1] == '\r')
-            cmd.erase(cmd.size() - 1);
-        s.erase(0, pos + 1);
-        if (!cmd.empty()) {
-            Message msg = parseCommand(cmd);
-            
-            if (msg.command.empty())
-                std::cout << "command empty\n";
-            else if (msg.params.empty())
-                std::cout << "param empty\n";
-            else {
-                if (!msg.prefix.empty())
-                    std::cout << "prefix: " << msg.prefix << "\n";
-                std::cout << "command: " << msg.command << "\n";
-                for (size_t i = 0; i < msg.params.size(); i++)
-                    std::cout << "params[" << i << "]: " << msg.params[i] << "\n"; 
-            }
-        }
-    }
 }

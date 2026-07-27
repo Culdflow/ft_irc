@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_irc.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jpecquer <jpecquer@student.42.fr>          +#+  +:+       +#+        */
+/*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:47 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/24 16:26:31 by jpecquer         ###   ########.fr       */
+/*   Updated: 2026/07/27 15:34:08 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ void test_parsing(std::string& s);
 
 // parsing
 void parseArguments(int ac, char **av);
-void socketBufferParsing(client& Client);
+std::vector<Message> socketBufferParsing(client& Client);
 
 Message parseCommand(std::string& raw);
 

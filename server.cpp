@@ -16,14 +16,10 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
 
 //CONSTRUCTORS------------------------------------------------------
 
-serv::serv(char *port, char *pass)
+serv::serv(unsigned int port, const std::string& pass) : _port(port), _password(pass)
 {
 	std::cout << "Serv Constructor Called" << std::endl;
-	this->_port = atoi(port);
-	if (this->_port <= 0 || this->_port > 65535)
-		throw serv::PortWrongError();
 	std::cout << "port = " << this->_port << std::endl;
-	this->_password = pass;
 	std::cout << "password = " << this->_password << std::endl;
 	this->createSocket();
 }
@@ -107,20 +103,14 @@ void	serv::init()
 				}
 				else
 				{
-					client cl;
 					for (std::vector<client>::iterator c = this->_clientList.begin(); c != this->_clientList.end(); c++)
 					{
-						if ((*c).getSocketFd() == i)
-							cl = *c;
+						if ((*c).getSocketFd() == i) {
+							std::vector<Message> msgs = socketBufferParsing(*c);
+							for (size_t j = 0; j < msgs.size(); j++)
+								this->recvMsg(*c, msgs[j]);
+						}
 					}
-					char buffer[1024];
-					std::cout << "Attention jecout elekip" << std::endl;
-					recv(i, &buffer, sizeof(buffer), 0);
-					std::string bufferStr = buffer;
-					std::cout << buffer << std::endl;
-					Message msg = parseCommand(bufferStr);
-					this->recvMsg(cl, msg);
-					socketBufferParsing(cl);
 				}
 			}
 		}
@@ -129,7 +119,7 @@ void	serv::init()
 
 //METHODS
 
-void	serv::recvMsg(client cl, Message msg)
+void	serv::recvMsg(client& cl, Message msg)
 {
 	std::cout << "prefix: " << msg.prefix << std::endl;
 	std::cout << "command: " << msg.command << std::endl;
@@ -170,10 +160,6 @@ int				serv::getSocketFd()const
 
 //EXCEPTIONS-------------------------------------------------------------
 
-const char* serv::PortWrongError::what(void) const throw()
-{
-	return ("[Error] : PORT NUMBER WRONG (must be a number between 1 and 65535)");
-}
 
 //DESTRUCTORS--------------------------------------------------------------
 

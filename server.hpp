@@ -32,7 +32,7 @@ class serv
 	public:
 		//CONSTRUCTORS
 		serv();
-		serv(char *port, char *pass);
+		serv(unsigned int port, const std::string& pass);
 		serv(const serv& src);
 		serv&	operator=(const serv& src);
 		//DESTRUCTORS
@@ -40,19 +40,13 @@ class serv
 
 
 		//METHODS
-		void	recvMsg(client cl, Message msg);
+		void	recvMsg(client &cl, Message msg);
 
 		//GETTER
 		sockaddr_in		getSocket()const;
 		unsigned int 	getPort()const;
 		std::string		getPassword()const;
 		int				getSocketFd()const;
-
-	class PortWrongError: public std::exception
-	{
-		public:
-			virtual const char *what() const throw();
-	};
 };
 
 std::vector<std::string> split(const std::string& s, char delimiter);
