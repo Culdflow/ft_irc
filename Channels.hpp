@@ -1,29 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   Channels.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/10 11:27:59 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/27 16:22:12 by juliette-ma      ###   ########.fr       */
+/*   Created: 2026/07/27 16:24:08 by juliette-ma       #+#    #+#             */
+/*   Updated: 2026/07/27 16:26:23 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_irc.hpp"
-#include "Server.hpp"
+#ifndef CHANNELS_HPP
+#define CHANNELS_HPP
 
-int main(int ac, char **av) {
-    try {
-        parseArguments(ac, av);
-        unsigned int port = atoi(av[1]);
-        std::string password = av[2];
-        serv	server(port, password);
-        server.run();
-    }
-    catch (std::exception& e) {
-        std::cerr << e.what() << "\n";
-        return EXIT_FAILURE;
-    }
-	return (EXIT_SUCCESS);
-}
+#include "ft_irc.hpp"
+
+class Channel
+{
+	private:
+
+		//PRIVATE METHODS
+		void		createSocket();
+	public:
+		//CONSTRUCTORS
+		Channel();
+		Channel(const Channel& src);
+		Channel&	operator=(const Channel& src);
+		//DESTRUCTORS
+		~Channel();
+
+
+		//METHODS
+		//GETTER
+};
+
+
+#endif

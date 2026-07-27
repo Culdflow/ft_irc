@@ -1,4 +1,4 @@
-#include "client.hpp"
+#include "Client.hpp"
 
 //CONSTRUCTOR-------------------------------------
 
@@ -7,7 +7,7 @@ client::client()
 	this->_socketFd = 0;
 	this->_name = "";
 	this->_nick = "";
-	this->_paswdSent = false;
+	this->_paswdCorrect = false;
 }
 
 client::client(int fd)
@@ -15,7 +15,7 @@ client::client(int fd)
 	this->_socketFd = fd;
 	this->_name = "";
 	this->_nick = "";
-	this->_paswdSent = false;
+	this->_paswdCorrect = false;
 }
 
 client::client(const client& src)
@@ -31,7 +31,7 @@ client&	client::operator=(const client& src)
 	this->_name = src._name;
 	this->_nick = src._nick;
 	this->_socketFd = src._socketFd;
-	this->_paswdSent = src._paswdSent;
+	this->_paswdCorrect = src._paswdCorrect;
 	this->_inputBuf = src._inputBuf;
 	return (*this);
 }
@@ -48,9 +48,9 @@ bool	client::isNickSet()const
 	return (!this->_nick.empty());
 }
 
-bool	client::isPaswdSent()const
+bool	client::isPaswdCorrect() const
 {
-	return(this->_paswdSent);
+	return(this->_paswdCorrect);
 }
 
 //GETTER----------------------------------------
@@ -65,6 +65,14 @@ std::string& client::getInputBuf()
     return (this->_inputBuf);
 }
 
+const std::string& client::getNick() const {
+	return _nick;
+}
+const std::string& client::getName() const {
+	return _name;
+}
+
+
 //SETTER----------------------------------------
 
 void	client::setNick(std::string newNick)
@@ -77,9 +85,9 @@ void	client::setName(std::string newName)
 	this->_name = newName;
 }
 
-void	client::setPaswdSent(bool paswdsent)
+void	client::setPaswdCorrect(bool paswdCorrect)
 {
-	this->_paswdSent = paswdsent;
+	this->_paswdCorrect = paswdCorrect;
 }
 
 //DESTRUCTOR-------------------------------------

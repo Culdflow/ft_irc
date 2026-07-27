@@ -6,7 +6,7 @@
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:34 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/27 16:02:18 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/27 16:48:40 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,15 +46,17 @@ void parseArguments(int ac, char **av) {
 
       
 // reconstituer la commande a partir de ce qui est recu
-// manque : le client (sous quelle forme ? Je mets une struct en attendant mais surement une classe), son socket et son buffer d'input
 
-std::vector<Message> socketBufferParsing(client& Client) {
+std::vector<Message> socketBufferParsing(client& Client, bool& closed) {
     char buf[512];
     int n = recv(Client.getSocketFd(), buf, sizeof(buf), 0);
     std::vector<Message> vecMsgs;
 
     if (n <= 0)
+    {
+        closed = true;
         return vecMsgs;
+    }
     Client.getInputBuf().append(buf, n);
     size_t pos;
     while ((pos = Client.getInputBuf().find('\n')) != std::string::npos) {

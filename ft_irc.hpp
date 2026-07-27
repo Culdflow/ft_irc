@@ -6,7 +6,7 @@
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:47 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/27 15:34:08 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/27 16:49:32 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "client.hpp"
+#include "Client.hpp"
 
 struct Message {
     std::string prefix;             
@@ -31,8 +31,8 @@ struct Message {
 
 typedef struct Channel {
 	std::string	topic;
-	std::vector<client> Users;
-	std::vector<client>	Operators;
+	std::vector<client*> Users;
+	std::vector<client*>	Operators;
 	bool				InviteOnly;
 	bool				RestrictTopic;
 	bool				SetPasswd;
@@ -40,15 +40,9 @@ typedef struct Channel {
 }	t_channel;
 
 
-void test_parsing(std::string& s);
-
-// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
-
-
 // parsing
 void parseArguments(int ac, char **av);
-std::vector<Message> socketBufferParsing(client& Client);
-
+std::vector<Message> socketBufferParsing(client& Client, bool &closed);
 Message parseCommand(std::string& raw);
 
 #endif
