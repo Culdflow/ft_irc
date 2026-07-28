@@ -4,18 +4,20 @@
 
 client::client()
 {
-	this->_socketFd = 0;
-	this->_name = "";
-	this->_nick = "";
-	this->_paswdCorrect = false;
+	_socketFd = 0;
+	_name = "";
+	_nick = "";
+	_paswdCorrect = false;
+	_registered = false;
 }
 
 client::client(int fd)
 {
-	this->_socketFd = fd;
-	this->_name = "";
-	this->_nick = "";
-	this->_paswdCorrect = false;
+	_socketFd = fd;
+	_name = "";
+	_nick = "";
+	_paswdCorrect = false;
+	_registered = false;
 }
 
 client::client(const client& src)
@@ -33,6 +35,7 @@ client&	client::operator=(const client& src)
 	this->_socketFd = src._socketFd;
 	this->_paswdCorrect = src._paswdCorrect;
 	this->_inputBuf = src._inputBuf;
+	this->_registered = src._registered;
 	return (*this);
 }
 
@@ -51,6 +54,10 @@ bool	client::isNickSet()const
 bool	client::isPaswdCorrect() const
 {
 	return(this->_paswdCorrect);
+}
+
+bool	client::isRegistered() const {
+	return(this->_registered);
 }
 
 //GETTER----------------------------------------
@@ -88,6 +95,10 @@ void	client::setName(std::string newName)
 void	client::setPaswdCorrect(bool paswdCorrect)
 {
 	this->_paswdCorrect = paswdCorrect;
+}
+
+void	client::setRegistered(bool registered) {
+	this->_registered = registered;
 }
 
 //DESTRUCTOR-------------------------------------

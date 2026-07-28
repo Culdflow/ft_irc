@@ -10,6 +10,7 @@ class	client
 		bool				_paswdCorrect;
 		int					_socketFd;
 		std::string			_inputBuf;
+		bool				_registered;
 	
 	public:
 		client();
@@ -21,6 +22,7 @@ class	client
 		bool	isNickSet()const;
 		bool	isNameSet()const;
 		bool	isPaswdCorrect()const;
+		bool	isRegistered() const;
 		//GETTER
 		int					getSocketFd()const;
 		const std::string& 	getNick() const;
@@ -30,4 +32,5 @@ class	client
 		void	setNick(std::string newNick);
 		void	setName(std::string newName);
 		void	setPaswdCorrect(bool paswdCorrect);
+		void	setRegistered(bool registered);
 };

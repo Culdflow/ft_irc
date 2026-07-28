@@ -79,10 +79,10 @@ void serv::createSocket()
 	this->_socket.sin_family = AF_INET;
 	this->_socket.sin_port = htons(this->_port);
 	this->_socket.sin_addr.s_addr = INADDR_ANY;
-	bind(this->_socketFd, (struct sockaddr*)&this->_socket, sizeof(this->_socket));
-	listen(this->_socketFd, 0);
-	FD_ZERO(&this->_currentSockets);
-	FD_SET(this->_socketFd, &this->_currentSockets);
+	bind(_socketFd, (struct sockaddr*)&_socket, sizeof(_socket));
+	listen(_socketFd, 0);
+	FD_ZERO(&_currentSockets);
+	FD_SET(_socketFd, &_currentSockets);
 }
 
 void serv::acceptNewClient() {
@@ -127,6 +127,30 @@ void serv::sendReply(client& cl, const std::string& reply) {
 	send(cl.getSocketFd(), line.c_str(), line.size(), 0);
 }
 
+void serv::sendWelcome(client& cl)
+{
+    std::string nick = cl.getNick();
+    std::string prefix = ":ircserv ";
+	std::string line001 = prefix + "001 " + nick + " :Welcome to the IRC network\r\n";
+
+	//debug
+	std::cout << "SENDING: [" << line001 << "]" << std::endl;
+	//
+    send(cl.getSocketFd(), line001.c_str(), line001.size(), 0);
+}
+
+void serv::checkRegistration(client& cl)
+{
+    if (cl.isRegistered())  
+        return;
+
+    if (cl.isNameSet() && cl.isNickSet() && cl.isPaswdCorrect())
+    {
+        cl.setRegistered(true);
+        sendWelcome(cl);
+    }
+}
+
 void serv::cmdPass(client& cl, Message msg) {
 	if (cl.isPaswdCorrect())
 	{
@@ -144,6 +168,7 @@ void serv::cmdPass(client& cl, Message msg) {
 		return;
 	}
 	cl.setPaswdCorrect(true);
+	checkRegistration(cl);
 }
 
 void serv::cmdNick(client& cl, Message msg) {
@@ -167,6 +192,7 @@ void serv::cmdNick(client& cl, Message msg) {
 		}
 	}
 	cl.setNick(newNick);
+	checkRegistration(cl);
 }
 
 void serv::cmdName(client& cl, Message msg) {
@@ -181,6 +207,7 @@ void serv::cmdName(client& cl, Message msg) {
 		return;
 	}
 	cl.setName(msg.params[0]);
+	checkRegistration(cl);
 }
 
 

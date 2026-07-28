@@ -33,6 +33,8 @@ class serv
 		void 			cmdPass(client& cl, Message msg);
 		void 			cmdNick(client& cl, Message msg);
 		void 			cmdName(client& cl, Message msg);
+		void 			checkRegistration(client& cl);
+		void			sendWelcome(client& cl);
 
 
 	public:
