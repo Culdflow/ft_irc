@@ -119,7 +119,6 @@ void serv::handleClient(int fd) {
 			return;
 		}
 	}
-
 }
 
 void serv::sendReply(client& cl, const std::string& reply) {
@@ -229,10 +228,19 @@ void	serv::recvMsg(client& cl, Message msg)
 			cmdNick(cl, msg);
 		else if (msg.command == "USER")
 			cmdName(cl, msg);
+		else if (cmd_exist(msg.command) == true)
+		{
+			sendReply(cl, "451 ERR_NOTREGISTERED :You have not registered");
+			return;
+		}
 	}
-	else
+	else if (cmd_exist(msg.command) == true)
 	{
-		//gere tous les autres msgs
+		if (msg.command == "JOIN")
+		{
+			cmdJOIN(cl, msg);
+			std::cout << "parfait" << std::endl;
+		}
 	}
 }
 void	serv::run()

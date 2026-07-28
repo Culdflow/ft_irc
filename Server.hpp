@@ -1,10 +1,12 @@
 #pragma once
 
 #include "ft_irc.hpp"
-
+#include "Channels.hpp"
+#include "utils.hpp"
 #include <cstring>
 #include <iostream>
 #include <netinet/in.h>
+#include <map>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -12,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+class Channel;
 
 class serv
 {
@@ -23,7 +26,7 @@ class serv
 		fd_set					_readySockets;
 		fd_set					_currentSockets;
 		std::vector<client*>	_clientList;
-		std::vector<t_channel> 	_channelList;
+		std::map<std::string, Channel> 	_channelList;
 
 		//PRIVATE METHODS
 		void 			createSocket();
@@ -33,6 +36,7 @@ class serv
 		void 			cmdPass(client& cl, Message msg);
 		void 			cmdNick(client& cl, Message msg);
 		void 			cmdName(client& cl, Message msg);
+		void			cmdJOIN(client& cl, Message msg);
 		void 			checkRegistration(client& cl);
 		void			sendWelcome(client& cl);
 
