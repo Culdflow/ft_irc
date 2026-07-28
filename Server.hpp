@@ -11,6 +11,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <poll.h>
+#include <cerrno>
 
 
 class serv
@@ -20,8 +22,7 @@ class serv
 		std::string				_password;
 		sockaddr_in				_socket;
 		int						_socketFd;
-		fd_set					_readySockets;
-		fd_set					_currentSockets;
+		std::vector<pollfd>		_pollFds;
 		std::vector<client*>	_clientList;
 		std::vector<t_channel> 	_channelList;
 
@@ -29,6 +30,7 @@ class serv
 		void 			createSocket();
 		void 			acceptNewClient();
 		void 			handleClient(int fd);
+		void 			removePollFd(int fd);
 		void 			sendReply(client& cl, const std::string& reply);
 		void 			cmdPass(client& cl, Message msg);
 		void 			cmdNick(client& cl, Message msg);

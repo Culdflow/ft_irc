@@ -65,8 +65,7 @@ serv&	serv::operator=(const serv& src)
 	this->_port = src._port;
 	this->_socket = src._socket;
 	this->_socketFd = src._socketFd;
-	this->_readySockets = src._readySockets;
-	this->_currentSockets = src._currentSockets;
+	this->_pollFds = src._pollFds;
 	this->_clientList = src._clientList;
 	return (*this);
 }
@@ -81,8 +80,12 @@ void serv::createSocket()
 	this->_socket.sin_addr.s_addr = INADDR_ANY;
 	bind(_socketFd, (struct sockaddr*)&_socket, sizeof(_socket));
 	listen(_socketFd, 0);
-	FD_ZERO(&_currentSockets);
-	FD_SET(_socketFd, &_currentSockets);
+
+	pollfd listenPfd;
+	listenPfd.fd = _socketFd;
+	listenPfd.events = POLLIN;
+	listenPfd.revents = 0;
+	_pollFds.push_back(listenPfd);
 }
 
 void serv::acceptNewClient() {
@@ -98,7 +101,12 @@ void serv::acceptNewClient() {
 		return;
 	}
 	this->_clientList.push_back(new client(cl));
-	FD_SET(cl, &this->_currentSockets);
+
+	pollfd clientPfd;
+	clientPfd.fd = cl;
+	clientPfd.events = POLLIN;
+	clientPfd.revents = 0;
+	_pollFds.push_back(clientPfd);
 }
 		
 void serv::handleClient(int fd) {
@@ -109,7 +117,7 @@ void serv::handleClient(int fd) {
 			std::vector<Message> msgs = socketBufferParsing(**c, closed);
 			if (closed) {
 				close(fd);
-				FD_CLR(fd, &_currentSockets);
+				removePollFd(fd);
 				delete *c;
 				_clientList.erase(c);
 				return;
@@ -120,6 +128,18 @@ void serv::handleClient(int fd) {
 		}
 	}
 
+}
+
+void serv::removePollFd(int fd)
+{
+	for (std::vector<pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); it++)
+	{
+		if (it->fd == fd)
+		{
+			_pollFds.erase(it);
+			return;
+		}
+	}
 }
 
 void serv::sendReply(client& cl, const std::string& reply) {
@@ -216,10 +236,12 @@ void serv::cmdName(client& cl, Message msg) {
 
 void	serv::recvMsg(client& cl, Message msg)
 {
+	//debug
 	std::cout << "prefix: " << msg.prefix << std::endl;
 	std::cout << "command: " << msg.command << std::endl;
 	for (std::vector<std::string>::iterator it = msg.params.begin(); it != msg.params.end(); it++)
 		std::cout << "param: " << *it << std::endl;
+	//
 	
 	if (!cl.isNameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
 	{
@@ -239,20 +261,22 @@ void	serv::run()
 {
 	while (true)
 	{
-		this->_readySockets = this->_currentSockets;
-		if (select(FD_SETSIZE, &this->_readySockets, NULL, NULL, NULL) < 0)
+		int ret = poll(&_pollFds[0], _pollFds.size(), -1);
+		if (ret < 0)
 		{
-			std::cerr << "errrrorrrrr select" << std::endl;
+			if (errno == EINTR)
+				continue;
+			std::cerr << "errrrorrrrr poll" << std::endl;
 			exit(EXIT_FAILURE); //gerer les deconnexions etc
 		}
-		for (int i = 0; i < FD_SETSIZE; i++)
+		for (size_t i = 0; i < _pollFds.size(); i++)
 		{
-			if (FD_ISSET(i, &this->_readySockets))
+			if (_pollFds[i].revents & POLLIN)
 			{
-				if (i == this->_socketFd)
+				if (_pollFds[i].fd == _socketFd)
 					acceptNewClient();
 				else
-					handleClient(i);
+					handleClient(_pollFds[i].fd);
 			}
 		}
 	}
