@@ -151,7 +151,10 @@ void Commands::cmdPrivmsg(client& cl, Message msg) {
 		sendReply(cl, "401 " + target + " :No such nick/channel");
 		return;
 	}
-	sendLine(*recipient, ":" + cl.getNick() + "!" + cl.getUsername() + "@ircserv PRIVMSG " + target + " :" + msg.params[1]);
+	std::string message;
+	for (std::vector<std::string>::iterator it = msg.params.begin() + 1; it != msg.params.end(); it++)
+		message = message + *it + " ";
+	sendLine(*recipient, ":" + cl.getNick() + "!" + cl.getUsername() + "@ircserv PRIVMSG " + target + " :" + message);
 }
 
 void Commands::cmdQuit(client& cl, Message msg) {
