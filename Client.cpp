@@ -5,19 +5,23 @@
 client::client()
 {
 	_socketFd = 0;
-	_name = "";
+	_username = "";
 	_nick = "";
+	_realName = "";
 	_paswdCorrect = false;
 	_registered = false;
+	_shouldDisconnect = false;
 }
 
 client::client(int fd)
 {
 	_socketFd = fd;
-	_name = "";
+	_username = "";
 	_nick = "";
+	_realName = "";
 	_paswdCorrect = false;
 	_registered = false;
+	_shouldDisconnect = false;
 }
 
 client::client(const client& src)
@@ -30,20 +34,22 @@ client::client(const client& src)
 
 client&	client::operator=(const client& src)
 {
-	this->_name = src._name;
+	this->_username = src._username;
 	this->_nick = src._nick;
+	this->_realName = src._realName;
 	this->_socketFd = src._socketFd;
 	this->_paswdCorrect = src._paswdCorrect;
 	this->_inputBuf = src._inputBuf;
 	this->_registered = src._registered;
+	this->_shouldDisconnect = src._shouldDisconnect;
 	return (*this);
 }
 
 //IS??----------------------------------------
 
-bool	client::isNameSet()const
+bool	client::isUsernameSet()const
 {
-	return (!this->_name.empty());
+	return (!this->_username.empty());
 }
 
 bool	client::isNickSet()const
@@ -58,6 +64,10 @@ bool	client::isPaswdCorrect() const
 
 bool	client::isRegistered() const {
 	return(this->_registered);
+}
+
+bool	client::shouldDisconnect() const {
+	return(this->_shouldDisconnect);
 }
 
 //GETTER----------------------------------------
@@ -75,8 +85,11 @@ std::string& client::getInputBuf()
 const std::string& client::getNick() const {
 	return _nick;
 }
-const std::string& client::getName() const {
-	return _name;
+const std::string& client::getUsername() const {
+	return _username;
+}
+const std::string& client::getRealName() const {
+	return _realName;
 }
 
 
@@ -87,9 +100,14 @@ void	client::setNick(std::string newNick)
 	this->_nick = newNick;
 }
 
-void	client::setName(std::string newName)
+void	client::setUsername(std::string newUsername)
 {
-	this->_name = newName;
+	this->_username = newUsername;
+}
+
+void	client::setRealName(std::string newRealName)
+{
+	this->_realName = newRealName;
 }
 
 void	client::setPaswdCorrect(bool paswdCorrect)
@@ -99,6 +117,10 @@ void	client::setPaswdCorrect(bool paswdCorrect)
 
 void	client::setRegistered(bool registered) {
 	this->_registered = registered;
+}
+
+void	client::setShouldDisconnect(bool value) {
+	this->_shouldDisconnect = value;
 }
 
 //DESTRUCTOR-------------------------------------

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ft_irc.hpp"
+#include "Commands.hpp"
 
 #include <cstring>
 #include <iostream>
@@ -25,19 +26,13 @@ class serv
 		std::vector<pollfd>		_pollFds;
 		std::vector<client*>	_clientList;
 		std::vector<t_channel> 	_channelList;
+		Commands				_commands;
 
 		//PRIVATE METHODS
 		void 			createSocket();
 		void 			acceptNewClient();
 		void 			handleClient(int fd);
 		void 			removePollFd(int fd);
-		void 			sendReply(client& cl, const std::string& reply);
-		void 			cmdPass(client& cl, Message msg);
-		void 			cmdNick(client& cl, Message msg);
-		void 			cmdName(client& cl, Message msg);
-		void 			checkRegistration(client& cl);
-		void			sendWelcome(client& cl);
-
 
 	public:
 		//CONSTRUCTORS
@@ -50,8 +45,9 @@ class serv
 
 
 		//METHODS
-		void			recvMsg(client &cl, Message msg);
 		void			run();
+		client*			findClientByNick(const std::string& nick);
+		std::vector<t_channel>& getChannelList();
 
 		//GETTER
 		sockaddr_in		getSocket()const;

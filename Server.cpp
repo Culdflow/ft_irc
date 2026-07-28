@@ -1,23 +1,6 @@
 #include "Server.hpp"
-#include <cctype>
 
 //HELPER-----------------------------------------------------------
-
-static bool isValidNick(const std::string& nick)
-{
-	if (nick.empty() || nick.size() > 9)
-		return false;
-	if (!isalpha(nick[0]))
-		return false;
-	for (size_t i = 1; i < nick.size(); i++)
-	{
-		char c = nick[i];
-		if (!isalnum(c) && c != '-' && c != '_' && c != '[' && c != ']'
-			&& c != '\\' && c != '^' && c != '{' && c != '}' && c != '`')
-			return false;
-	}
-	return true;
-}
 
 std::vector<std::string> split(const std::string& s, char delimiter) {
 	std::vector<std::string> tokens;
@@ -33,7 +16,7 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
 
 //CONSTRUCTORS------------------------------------------------------
 
-serv::serv(unsigned int port, const std::string& pass) : _port(port), _password(pass)
+serv::serv(unsigned int port, const std::string& pass) : _port(port), _password(pass), _commands(this)
 {
 	std::cout << "Serv Constructor Called" << std::endl;
 	std::cout << "port = " << this->_port << std::endl;
@@ -41,7 +24,7 @@ serv::serv(unsigned int port, const std::string& pass) : _port(port), _password(
 	this->createSocket();
 }
 
-serv::serv()
+serv::serv() : _commands(this)
 {
 	std::cout << "Serv Constructor Called" << std::endl;
 	this->_port = 6667;
@@ -51,7 +34,7 @@ serv::serv()
 	this->createSocket();
 }
 
-serv::serv(const serv& src)
+serv::serv(const serv& src) : _commands(this)
 {
 	if (this != &src)
 		*this = src;
@@ -108,7 +91,7 @@ void serv::acceptNewClient() {
 	clientPfd.revents = 0;
 	_pollFds.push_back(clientPfd);
 }
-		
+
 void serv::handleClient(int fd) {
 	for (std::vector<client*>::iterator c = this->_clientList.begin(); c != this->_clientList.end(); c++)
 	{
@@ -123,7 +106,18 @@ void serv::handleClient(int fd) {
 				return;
 			}
 			for (size_t j = 0; j < msgs.size(); j++)
-				this->recvMsg(**c, msgs[j]);
+			{
+				this->_commands.dispatch(**c, msgs[j]);
+				if ((*c)->shouldDisconnect())
+					break;
+			}
+			if ((*c)->shouldDisconnect())
+			{
+				close(fd);
+				removePollFd(fd);
+				delete *c;
+				_clientList.erase(c);
+			}
 			return;
 		}
 	}
@@ -142,121 +136,23 @@ void serv::removePollFd(int fd)
 	}
 }
 
-void serv::sendReply(client& cl, const std::string& reply) {
-	std::string line = ":ircserv " + reply + "\r\n";
-	send(cl.getSocketFd(), line.c_str(), line.size(), 0);
-}
-
-void serv::sendWelcome(client& cl)
-{
-    std::string nick = cl.getNick();
-    std::string prefix = ":ircserv ";
-	std::string line001 = prefix + "001 " + nick + " :Welcome to the IRC network\r\n";
-
-	//debug
-	std::cout << "SENDING: [" << line001 << "]" << std::endl;
-	//
-    send(cl.getSocketFd(), line001.c_str(), line001.size(), 0);
-}
-
-void serv::checkRegistration(client& cl)
-{
-    if (cl.isRegistered())  
-        return;
-
-    if (cl.isNameSet() && cl.isNickSet() && cl.isPaswdCorrect())
-    {
-        cl.setRegistered(true);
-        sendWelcome(cl);
-    }
-}
-
-void serv::cmdPass(client& cl, Message msg) {
-	if (cl.isPaswdCorrect())
-	{
-		sendReply(cl, "462 * :You may not reregister");
-		return;
-	}
-	if (msg.params.empty())
-	{
-		sendReply(cl, "461 * PASS :Not enough parameters");
-		return;
-	}
-	if (msg.params[0] != this->_password)
-	{
-		sendReply(cl, "464 * :Password incorrect");
-		return;
-	}
-	cl.setPaswdCorrect(true);
-	checkRegistration(cl);
-}
-
-void serv::cmdNick(client& cl, Message msg) {
-	if (msg.params.empty())
-	{
-		sendReply(cl, "431 * :No nickname given");
-		return;
-	}
-	const std::string& newNick = msg.params[0];
-	if (!isValidNick(newNick))
-	{
-		sendReply(cl, "432 * " + newNick + " :Erroneous nickname");
-		return;
-	}
-	for (std::vector<client*>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
-	{
-		if (*it != &cl && (*it)->getNick() == newNick)
-		{
-			sendReply(cl, "433 * " + newNick + " :Nickname is already in use");
-			return;
-		}
-	}
-	cl.setNick(newNick);
-	checkRegistration(cl);
-}
-
-void serv::cmdName(client& cl, Message msg) {
-	if (msg.params.size() < 4)
-	{
-		sendReply(cl, "461 * USER :Not enough parameters");
-		return;
-	}
-	if (cl.isNameSet())
-	{
-		sendReply(cl, "462 * :You may not reregister");
-		return;
-	}
-	cl.setName(msg.params[0]);
-	checkRegistration(cl);
-}
-
-
-
 //METHODS
 
-void	serv::recvMsg(client& cl, Message msg)
+client* serv::findClientByNick(const std::string& nick)
 {
-	//debug
-	std::cout << "prefix: " << msg.prefix << std::endl;
-	std::cout << "command: " << msg.command << std::endl;
-	for (std::vector<std::string>::iterator it = msg.params.begin(); it != msg.params.end(); it++)
-		std::cout << "param: " << *it << std::endl;
-	//
-	
-	if (!cl.isNameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
+	for (std::vector<client*>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
 	{
-		if (msg.command == "PASS")
-			cmdPass(cl, msg);
-		else if (msg.command == "NICK")
-			cmdNick(cl, msg);
-		else if (msg.command == "USER")
-			cmdName(cl, msg);
+		if ((*it)->getNick() == nick)
+			return *it;
 	}
-	else
-	{
-		//gere tous les autres msgs
-	}
+	return NULL;
 }
+
+std::vector<t_channel>& serv::getChannelList()
+{
+	return _channelList;
+}
+
 void	serv::run()
 {
 	while (true)
