@@ -145,6 +145,27 @@ void Commands::cmdPrivmsg(client& cl, Message msg) {
 		sendReply(cl, "412 * :No text to send");
 		return;
 	}
+	if(msg.params[0][0] == '#')
+    {
+        if(msg.params[0][1] == '\0')
+		{
+			sendReply(cl, "476 ERR_BADCHANMASK");
+			return;
+		}
+		std::string name_chan = msg.params[0].substr(1);
+		if(_serv->channel_exist(name_chan))
+    	{
+			// std::map<std::string, Channel> tmp = serv.getChannelList();
+			std::map<std::string, Channel>::iterator it = _serv->getChannelList().find(name_chan);
+			it->second.broadcast(cl, msg);
+			return;
+		}
+		else
+		{
+        	sendReply(cl, "403  ERR_NOSUCHCHANNEL");
+			return;
+		}
+    }
 	const std::string& target = msg.params[0];
 	client* recipient = _serv->findClientByNick(target);
 	if (recipient == NULL)
@@ -155,6 +176,7 @@ void Commands::cmdPrivmsg(client& cl, Message msg) {
 	std::string message;
 	for (std::vector<std::string>::iterator it = msg.params.begin() + 1; it != msg.params.end(); it++)
 		message = message + *it + " ";
+	std::cout<<"yoooooooooo\n";
 	sendLine(*recipient, ":" + cl.getNick() + "!" + cl.getUsername() + "@ircserv PRIVMSG " + target + " :" + message);
 }
 
@@ -173,21 +195,22 @@ void Commands::cmdJOIN(client& cl, Message msg)
         sendReply(cl, "461 ERR_NEEDMOREPARAMS");
         return ;
     }
-    if(msg.params[0][0] != '#')
+    if(msg.params[0][0] != '#' || (msg.params[0][0] && msg.params[0][1] == '\0'))
     {
         sendReply(cl, "476 ERR_BADCHANMASK");
         return ;
     }
     std::map<std::string, Channel>& channelList = _serv->getChannelList();
     std::map<std::string, Channel>::iterator it;
-    it = channelList.find("#42");
+	std::string name = msg.params[0].substr(1);
+    it = channelList.find(name);
     if(it != channelList.end())
     {
         it->second.add_user(cl);
     }
     else
     {
-        std::string name = msg.params[0].substr(1);
+		std::cout << "salut la team\n";
         Channel channel(name);
         channel.add_user(cl);
         channel.add_operator(cl);
@@ -228,7 +251,10 @@ void Commands::dispatch(client& cl, Message msg)
 	else if (cmd_exist(msg.command) == true)
 	{
 		if (msg.command == "PRIVMSG")
+		{
+			std::cout << "ouais la team" << std::endl;
 			cmdPrivmsg(cl, msg);
+		}
 		else if (msg.command == "JOIN")
 		{
 			cmdJOIN(cl, msg);

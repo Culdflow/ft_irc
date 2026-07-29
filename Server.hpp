@@ -50,13 +50,14 @@ class serv
 		//METHODS
 		void			run();
 		client*			findClientByNick(const std::string& nick);
-		std::map<std::string, Channel>& getChannelList();
-
+		bool			channel_exist(std::string& name_ch);
+		
 		//GETTER
 		sockaddr_in		getSocket()const;
 		unsigned int 	getPort()const;
 		std::string		getPassword()const;
 		int				getSocketFd()const;
+		std::map<std::string, Channel>& getChannelList();
 };
 
 std::vector<std::string> split(const std::string& s, char delimiter);

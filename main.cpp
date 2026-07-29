@@ -20,6 +20,8 @@ int main(int ac, char **av) {
         std::string password = av[2];
         serv	server(port, password);
         server.run();
+        std::map<std::string, Channel>::iterator it = server.getChannelList().find("42");
+        it->second.
     }
     catch (std::exception& e) {
         std::cerr << e.what() << "\n";

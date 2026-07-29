@@ -18,6 +18,8 @@
 #include "Server.hpp"
 #include <map>
 
+class serv;
+
 class Channel
 {
 	private:
@@ -38,7 +40,11 @@ class Channel
 		//METHODS
 		void add_user(client& cl);
 		void add_operator(client& cl);
+		void broadcast(client& cl, Message& msg);
+		bool user_present(client& cl);
 		//GETTER
+
+		void aff_users();
 };
 
 
