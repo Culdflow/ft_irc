@@ -6,7 +6,7 @@
 /*   By: jmalaval <jmalaval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/27 16:24:08 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/29 15:59:13 by jmalaval         ###   ########.fr       */
+/*   Updated: 2026/07/29 17:56:33 by jmalaval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,11 @@
 class Channel
 {
 	private:
-		std::string _name;
+		std::string 	_name;
+		std::string 	_channelKey;
+		std::string		_topic;
+		bool			_inviteOnly;
+		unsigned int 	_userLimit;
 		
 		std::vector<client*> _users;
 		std::vector<client*> _operators;
@@ -38,7 +42,20 @@ class Channel
 		//METHODS
 		void add_user(client& cl);
 		void add_operator(client& cl);
+		void removeOperator(client& cl);
+		//SETTER
+		void setInviteOnly(bool value);
+		void setChannelKey(std::string& key);
+		void setUserLimit(unsigned int u);
+		void setTopic(std::string& topic);
 		//GETTER
+		bool isInviteOnly() const;
+		std::string getChannelKey() const;
+		unsigned int getUserLimit() const;
+		std::string getTopic() const;
+		std::vector<client*> getUserList() const;
+		std::vector<client*> getOperatorsList() const;
+
 };
 
 

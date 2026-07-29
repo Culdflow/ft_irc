@@ -187,13 +187,116 @@ void Commands::cmdJOIN(client& cl, Message msg)
     }
     else
     {
-        std::string name = msg.params[0].substr(1);
+        std::string name = msg.params[0].substr(1); // verifier que y a bien un channel apres #
         Channel channel(name);
         channel.add_user(cl);
         channel.add_operator(cl);
         channelList[name] = Channel(name);
     }
 }
+
+// /mode (channel) (+ | -) (mode) [parametres]
+// /mode #chez -sk CLEFPASS (enlève le mode secret et le mot de passe) 
+// · i: Set/remove Invite-only channel
+// · t: Set/remove the restrictions of the TOPIC command to channel operators
+// · k: Set/remove the channel key (password)
+// · o: Give/take channel operator privilege
+// · l: Set/remove the user limit to channel
+void 	Commands::cmdMode(client& cl, Message msg) {
+	if (msg.params.size() < 1)
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    }
+	if(msg.params[0][0] != '#')
+    {
+        sendReply(cl, "476 ERR_BADCHANMASK");
+        return ;
+    }
+	std::map<std::string, Channel>& channelList = _serv->getChannelList();
+    std::map<std::string, Channel>::iterator it = channelList.find(msg.params[0].substr(1));
+	if (it == channelList.end()) {
+		sendReply(cl, "403 ERR_NOSUCHCHANNEL");
+        return ;
+	}
+	else {
+		//faire le truc demandé pour le channel
+		// verifier params[1]
+
+	}
+
+}
+
+void 	Commands::cmdIMode(client&cl, Message msg, Channel &channel) {
+	if (msg.params[1][0] == '+')
+		channel.setInviteOnly(true);
+	else if (msg.params[1][0] == '-')
+		channel.setInviteOnly(true);
+}
+
+void 	cmdTMode(client&cl, Message msg, Channel &channel);		
+
+void 	Commands::cmdKMode(client&cl, Message msg, Channel &channel) {
+	std::string key;
+	if (msg.params.size() < 3)
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    } 
+	if (msg.params[1][0] == '+')
+		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+	else if (msg.params[1][0] == '-')
+		channel.setChannelKey(key);
+
+}
+
+void 	Commands::cmdOMode(client&cl, Message msg, Channel &channel) {
+	if (msg.params.size() < 3)
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    }
+	const std::string& target = msg.params[2];
+	client* recipient = _serv->findClientByNick(target);
+	if (recipient == NULL)
+	{
+		sendReply(cl, "401 " + target + " :No such nick/channel");
+		return;
+	}
+	std::vector<client*>::iterator it_users;
+	std::vector<client*>::iterator it_operators;
+	for (it_operators = channel.getOperatorsList().begin(); it_operators != channel.getOperatorsList().end(); it_operators++) {
+		if (*it_operators == recipient) {
+			if (msg.params[1][0] == '+')
+				return;
+			else if (msg.params[1][0] == '-')
+			{
+				channel.removeOperator(*recipient);
+				return;
+			}
+		}
+	}
+	for (it_users = channel.getUserList().begin(); it_users != channel.getUserList().end(); it_users++) {
+		if (*it_users == recipient) {
+			if (msg.params[1][0] == '+')
+			{
+				channel.add_operator(*recipient);
+				return;
+			}
+			else if (msg.params[1][0] == '-')
+				return;
+		}
+	}
+	if (it_users == channel.getUserList().end() && it_operators == channel.getOperatorsList().end()) 
+	{
+		sendReply(cl, "441 ERR_USERNOTINCHANNEL");
+		return;
+	}
+}
+	
+void 	cmdLMode(client&cl, Message msg, Channel &channel);
+
+
 
 //DISPATCH---------------------------------------------------------
 
