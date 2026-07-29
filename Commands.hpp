@@ -2,8 +2,10 @@
 #define COMMANDS_HPP
 
 #include "ft_irc.hpp"
+#include <climits>
 
 class serv;
+class Channel;
 
 class Commands
 {
@@ -29,6 +31,12 @@ class Commands
 		void 	cmdJOIN(client& cl, Message msg);
 		void	cmdPrivmsg(client& cl, Message msg);
 		void	cmdQuit(client& cl, Message msg);
+		void 	cmdMode(client& cl, Message msg);
+		void 	cmdIMode(client&cl, Message msg, Channel &channel);
+		void 	cmdTMode(client&cl, Message msg, Channel &channel);		
+		void 	cmdKMode(client&cl, Message msg, Channel &channel);
+		void 	cmdOMode(client&cl, Message msg, Channel &channel);
+		void 	cmdLMode(client&cl, Message msg, Channel &channel);
 };
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channels.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jmalaval <jmalaval@student.42.fr>          +#+  +:+       +#+        */
+/*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/27 16:24:08 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/29 15:59:13 by jmalaval         ###   ########.fr       */
+/*   Updated: 2026/07/29 22:13:53 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,11 @@ class serv;
 class Channel
 {
 	private:
-		std::string _name;
+		std::string 	_name;
+		std::string 	_channelKey;
+		std::string		_topic;
+		bool			_inviteOnly;
+		unsigned int 	_userLimit;
 		
 		std::vector<client*> _users;
 		std::vector<client*> _operators;
@@ -40,9 +44,22 @@ class Channel
 		//METHODS
 		void add_user(client& cl);
 		void add_operator(client& cl);
+		void removeOperator(client& cl);
+		//SETTER
+		void setInviteOnly(bool value);
+		void setChannelKey(std::string& key);
+		void setUserLimit(unsigned int u);
+		void setTopic(std::string& topic);
 		void broadcast(client& cl, Message& msg);
 		bool user_present(client& cl);
 		//GETTER
+		bool isInviteOnly() const;
+		std::string getChannelKey() const;
+		unsigned int getUserLimit() const;
+		std::string getTopic() const;
+		std::vector<client*> getUserList() const;
+		std::vector<client*> getOperatorsList() const;
+
 
 		void aff_users();
 };
