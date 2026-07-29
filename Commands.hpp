@@ -26,6 +26,7 @@ class Commands
 		void	cmdPass(client& cl, Message msg);
 		void	cmdNick(client& cl, Message msg);
 		void	cmdUser(client& cl, Message msg);
+		void 	cmdJOIN(client& cl, Message msg);
 		void	cmdPrivmsg(client& cl, Message msg);
 		void	cmdQuit(client& cl, Message msg);
 };

@@ -1,5 +1,6 @@
 #include "Commands.hpp"
 #include "Server.hpp"
+#include "utils.hpp"
 #include <cctype>
 
 //HELPER-----------------------------------------------------------
@@ -165,6 +166,35 @@ void Commands::cmdQuit(client& cl, Message msg) {
 	cl.setShouldDisconnect(true);
 }
 
+void Commands::cmdJOIN(client& cl, Message msg)
+{
+    if(msg.params.size() < 1)
+    {
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    }
+    if(msg.params[0][0] != '#')
+    {
+        sendReply(cl, "476 ERR_BADCHANMASK");
+        return ;
+    }
+    std::map<std::string, Channel>& channelList = _serv->getChannelList();
+    std::map<std::string, Channel>::iterator it;
+    it = channelList.find("#42");
+    if(it != channelList.end())
+    {
+        it->second.add_user(cl);
+    }
+    else
+    {
+        std::string name = msg.params[0].substr(1);
+        Channel channel(name);
+        channel.add_user(cl);
+        channel.add_operator(cl);
+        channelList[name] = Channel(name);
+    }
+}
+
 //DISPATCH---------------------------------------------------------
 
 void Commands::dispatch(client& cl, Message msg)
@@ -189,11 +219,21 @@ void Commands::dispatch(client& cl, Message msg)
 			cmdNick(cl, msg);
 		else if (msg.command == "USER")
 			cmdUser(cl, msg);
+		else if (cmd_exist(msg.command) == true)
+		{
+			sendReply(cl, "451 ERR_NOTREGISTERED :You have not registered");
+			return;
+		}
 	}
-	else
+	else if (cmd_exist(msg.command) == true)
 	{
 		if (msg.command == "PRIVMSG")
 			cmdPrivmsg(cl, msg);
+		else if (msg.command == "JOIN")
+		{
+			cmdJOIN(cl, msg);
+			std::cout << "parfait" << std::endl;
+		}
 	}
 }
 

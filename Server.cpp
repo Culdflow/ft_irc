@@ -137,36 +137,6 @@ void serv::removePollFd(int fd)
 
 //METHODS
 
-void	serv::recvMsg(client& cl, Message msg)
-{
-	std::cout << "prefix: " << msg.prefix << std::endl;
-	std::cout << "command: " << msg.command << std::endl;
-	for (std::vector<std::string>::iterator it = msg.params.begin(); it != msg.params.end(); it++)
-		std::cout << "param: " << *it << std::endl;
-	
-	if (!cl.isNameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
-	{
-		if (msg.command == "PASS")
-			cmdPass(cl, msg);
-		else if (msg.command == "NICK")
-			cmdNick(cl, msg);
-		else if (msg.command == "USER")
-			cmdName(cl, msg);
-		else if (cmd_exist(msg.command) == true)
-		{
-			sendReply(cl, "451 ERR_NOTREGISTERED :You have not registered");
-			return;
-		}
-	}
-	else if (cmd_exist(msg.command) == true)
-	{
-		if (msg.command == "JOIN")
-		{
-			cmdJOIN(cl, msg);
-			std::cout << "parfait" << std::endl;
-		}
-	}
-}
 client* serv::findClientByNick(const std::string& nick)
 {
 	for (std::vector<client*>::iterator it = _clientList.begin(); it != _clientList.end(); it++)
@@ -177,7 +147,7 @@ client* serv::findClientByNick(const std::string& nick)
 	return NULL;
 }
 
-std::vector<t_channel>& serv::getChannelList()
+std::map<std::string, Channel>& serv::getChannelList()
 {
 	return _channelList;
 }

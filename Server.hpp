@@ -50,7 +50,7 @@ class serv
 		//METHODS
 		void			run();
 		client*			findClientByNick(const std::string& nick);
-		std::vector<t_channel>& getChannelList();
+		std::map<std::string, Channel>& getChannelList();
 
 		//GETTER
 		sockaddr_in		getSocket()const;
