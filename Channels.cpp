@@ -1,21 +1,28 @@
 #include "Channels.hpp"
 
-Channel::Channel() : _name("")
+Channel::Channel() : _name(""), _inviteOnly(false), _userLimit(INT_MAX)
 {
 }
 
-Channel::Channel(const std::string &name) : _name(name)
+Channel::Channel(const std::string &name) : _name(name),  _inviteOnly(false), _userLimit(INT_MAX)
 {
 }
 
-Channel::Channel(const Channel &src) : _name(src._name), _users(src._users)
+Channel::Channel(const Channel &src) : _name(src._name), _channelKey(src._channelKey),
+	_topic(src._topic), _inviteOnly(src._inviteOnly), _userLimit(src._userLimit),
+	_users(src._users), _operators(src._operators)
 {
 }
 
 Channel &Channel::operator=(const Channel &src)
 {
 	_name = src._name;
+	_channelKey = src._channelKey;
+	_topic = src._topic;
+	_inviteOnly = src._inviteOnly;
+	_userLimit = src._userLimit;
 	_users = src._users;
+	_operators = src._operators;
 	return (*this);
 }
 

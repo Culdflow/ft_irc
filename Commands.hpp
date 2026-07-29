@@ -2,8 +2,10 @@
 #define COMMANDS_HPP
 
 #include "ft_irc.hpp"
+#include <climits>
 
 class serv;
+class Channel;
 
 class Commands
 {
