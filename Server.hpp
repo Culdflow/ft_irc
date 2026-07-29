@@ -3,6 +3,7 @@
 #include "ft_irc.hpp"
 #include "Channels.hpp"
 #include "utils.hpp"
+#include "Commands.hpp"
 #include <cstring>
 #include <iostream>
 #include <netinet/in.h>
@@ -13,6 +14,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <poll.h>
+#include <cerrno>
 
 class Channel;
 
@@ -23,23 +26,16 @@ class serv
 		std::string				_password;
 		sockaddr_in				_socket;
 		int						_socketFd;
-		fd_set					_readySockets;
-		fd_set					_currentSockets;
+		std::vector<pollfd>		_pollFds;
 		std::vector<client*>	_clientList;
 		std::map<std::string, Channel> 	_channelList;
+		Commands				_commands;
 
 		//PRIVATE METHODS
 		void 			createSocket();
 		void 			acceptNewClient();
 		void 			handleClient(int fd);
-		void 			sendReply(client& cl, const std::string& reply);
-		void 			cmdPass(client& cl, Message msg);
-		void 			cmdNick(client& cl, Message msg);
-		void 			cmdName(client& cl, Message msg);
-		void			cmdJOIN(client& cl, Message msg);
-		void 			checkRegistration(client& cl);
-		void			sendWelcome(client& cl);
-
+		void 			removePollFd(int fd);
 
 	public:
 		//CONSTRUCTORS
@@ -52,8 +48,9 @@ class serv
 
 
 		//METHODS
-		void			recvMsg(client &cl, Message msg);
 		void			run();
+		client*			findClientByNick(const std::string& nick);
+		std::vector<t_channel>& getChannelList();
 
 		//GETTER
 		sockaddr_in		getSocket()const;
