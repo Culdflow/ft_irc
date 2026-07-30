@@ -16,6 +16,7 @@ class Commands
 		void	sendReply(client& cl, const std::string& reply);
 		void	sendWelcome(client& cl);
 		void	checkRegistration(client& cl);
+		Channel*	getChannel(client& cl, const std::string& rawName);
 
 	public:
 		Commands(serv* server);
@@ -25,18 +26,19 @@ class Commands
 
 		void	dispatch(client& cl, Message msg);
 
-		void	cmdPass(client& cl, Message msg);
-		void	cmdNick(client& cl, Message msg);
-		void	cmdUser(client& cl, Message msg);
+		void	cmdPASS(client& cl, Message msg);
+		void	cmdNICK(client& cl, Message msg);
+		void	cmdUSER(client& cl, Message msg);
 		void 	cmdJOIN(client& cl, Message msg);
-		void	cmdPrivmsg(client& cl, Message msg);
-		void	cmdQuit(client& cl, Message msg);
-		void 	cmdMode(client& cl, Message msg);
-		void 	cmdIMode(client&cl, Message msg, Channel &channel);
-		void 	cmdTMode(client&cl, Message msg, Channel &channel);		
-		void 	cmdKMode(client&cl, Message msg, Channel &channel);
-		void 	cmdOMode(client&cl, Message msg, Channel &channel);
-		void 	cmdLMode(client&cl, Message msg, Channel &channel);
+		void	cmdPRIVMSG(client& cl, Message msg);
+		void	cmdQUIT(client& cl, Message msg);
+		void 	cmdMODE(client& cl, Message msg, Channel& channel);
+		void 	cmdIMODE(client& cl, Message msg, Channel &channel);
+		void 	cmdTMODE(client& cl, Message msg, Channel &channel);		
+		void 	cmdKMODE(client& cl, Message msg, Channel &channel);
+		void 	cmdOMODE(client& cl, Message msg, Channel &channel);
+		void 	cmdLMODE(client& cl, Message msg, Channel &channel);
+		void 	cmdKICK(client& cl, Message msg);
 };
 
 #endif

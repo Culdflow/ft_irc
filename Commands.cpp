@@ -54,10 +54,6 @@ void Commands::sendWelcome(client& cl)
 {
 	std::string nick = cl.getNick();
 	std::string line001 = ":ircserv 001 " + nick + " :Welcome to the IRC network\r\n";
-
-	//debug
-	std::cout << "SENDING: [" << line001 << "]" << std::endl;
-	//
 	send(cl.getSocketFd(), line001.c_str(), line001.size(), 0);
 }
 
@@ -73,9 +69,28 @@ void Commands::checkRegistration(client& cl)
 	}
 }
 
+Channel* Commands::getChannel(client& cl, const std::string& rawName)
+{
+	if (rawName.size() < 2 || rawName[0] != '#')
+	{
+		sendReply(cl, "476 ERR_BADCHANMASK");
+		return NULL;
+	}
+	std::map<std::string, Channel>& channelList = _serv->getChannelList();
+	std::map<std::string, Channel>::iterator it = channelList.find(rawName.substr(1));
+	if (it == channelList.end())
+	{
+		sendReply(cl, "403 ERR_NOSUCHCHANNEL");
+		return NULL;
+	}
+	return &it->second;
+}
+
 //COMMANDS-------------------------------------------------------------
 
-void Commands::cmdPass(client& cl, Message msg) {
+//--------AUTHENTIFICATION--------
+
+void Commands::cmdPASS(client& cl, Message msg) {
 	if (cl.isPaswdCorrect())
 	{
 		sendReply(cl, "462 * :You may not reregister");
@@ -96,7 +111,7 @@ void Commands::cmdPass(client& cl, Message msg) {
 	checkRegistration(cl);
 }
 
-void Commands::cmdNick(client& cl, Message msg) {
+void Commands::cmdNICK(client& cl, Message msg) {
 	if (msg.params.empty())
 	{
 		sendReply(cl, "431 * :No nickname given");
@@ -118,7 +133,7 @@ void Commands::cmdNick(client& cl, Message msg) {
 	checkRegistration(cl);
 }
 
-void Commands::cmdUser(client& cl, Message msg) {
+void Commands::cmdUSER(client& cl, Message msg) {
 	if (msg.params.size() < 4)
 	{
 		sendReply(cl, "461 * USER :Not enough parameters");
@@ -134,7 +149,9 @@ void Commands::cmdUser(client& cl, Message msg) {
 	checkRegistration(cl);
 }
 
-void Commands::cmdPrivmsg(client& cl, Message msg) {
+//--------PRIVMSG--------
+
+void Commands::cmdPRIVMSG(client& cl, Message msg) {
 	if (msg.params.empty())
 	{
 		sendReply(cl, "411 * :No recipient given (PRIVMSG)");
@@ -147,24 +164,11 @@ void Commands::cmdPrivmsg(client& cl, Message msg) {
 	}
 	if(msg.params[0][0] == '#')
     {
-        if(msg.params[0][1] == '\0')
-		{
-			sendReply(cl, "476 ERR_BADCHANMASK");
+		Channel* channel = getChannel(cl, msg.params[0]);
+		if (channel == NULL)
 			return;
-		}
-		std::string name_chan = msg.params[0].substr(1);
-		if(_serv->channel_exist(name_chan))
-    	{
-			// std::map<std::string, Channel> tmp = serv.getChannelList();
-			std::map<std::string, Channel>::iterator it = _serv->getChannelList().find(name_chan);
-			it->second.broadcast(cl, msg);
-			return;
-		}
-		else
-		{
-        	sendReply(cl, "403  ERR_NOSUCHCHANNEL");
-			return;
-		}
+		channel->broadcast(cl, msg);
+		return;
     }
 	const std::string& target = msg.params[0];
 	client* recipient = _serv->findClientByNick(target);
@@ -180,13 +184,17 @@ void Commands::cmdPrivmsg(client& cl, Message msg) {
 	sendLine(*recipient, ":" + cl.getNick() + "!" + cl.getUsername() + "@ircserv PRIVMSG " + target + " :" + message);
 }
 
-void Commands::cmdQuit(client& cl, Message msg) {
+//--------QUIT--------
+
+void Commands::cmdQUIT(client& cl, Message msg) {
 	if (msg.params.empty())
 		sendLine(cl, "ERROR :Closing Link: Client Quit");
 	else
 		sendLine(cl, "ERROR :Closing Link: " + msg.params[0]);
 	cl.setShouldDisconnect(true);
 }
+
+//--------JOIN--------
 
 void Commands::cmdJOIN(client& cl, Message msg)
 {
@@ -206,6 +214,25 @@ void Commands::cmdJOIN(client& cl, Message msg)
     it = channelList.find(name);
     if(it != channelList.end())
     {
+		if (it->second.isInviteOnly() == true) 
+		{
+			sendReply(cl, "473  ERR_INVITEONLYCHAN");
+        	return ;
+		}
+		if (!it->second.getChannelKey().empty())
+		{
+			std::string channelKey = it->second.getChannelKey();
+			if (msg.params.size() < 2 || msg.params[1] != channelKey)
+			{
+				sendReply(cl, "475  ERR_BADCHANNELKEY");
+				return ;
+			}
+		}
+		if (it->second.getNumberOfUsers() >= it->second.getUserLimit())
+		{
+			sendReply(cl, "471  ERR_CHANNELISFULL");
+        	return ;
+		}
         it->second.add_user(cl);
     }
     else
@@ -218,53 +245,38 @@ void Commands::cmdJOIN(client& cl, Message msg)
     }
 }
 
-// /mode (channel) (+ | -) (mode) [parametres]
-// /mode #chez -sk CLEFPASS (enlève le mode secret et le mot de passe) 
-// · t: Set/remove the restrictions of the TOPIC command to channel operators
-void 	Commands::cmdMode(client& cl, Message msg) {
-	if (msg.params.empty())
+//--------MODE--------
+
+void 	Commands::cmdMODE(client& cl, Message msg, Channel& channel) {
+	if (!channel.user_present(cl))
 	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    }
-	if(msg.params[0][0] != '#')
-    {
-        sendReply(cl, "476 ERR_BADCHANMASK");
-        return ;
-    }
-	std::map<std::string, Channel>& channelList = _serv->getChannelList();
-    std::map<std::string, Channel>::iterator it = channelList.find(msg.params[0].substr(1));
-	if (it == channelList.end()) {
-		sendReply(cl, "403 ERR_NOSUCHCHANNEL");
+		sendReply(cl, "442  ERR_NOTONCHANNEL");
         return ;
 	}
-	else {
-		if (msg.params.size () < 2  || msg.params[1].size() < 2)
-		{
-			sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-			return ;
-		}
-		char c = msg.params[1][1];
-		std::cout << "debug mode : " << c << std::endl;
-		if (msg.params[1].size() > 2 || (c != 'i' && c != 't' && c != 'k' && c != 'o' && c != 'l'))
-		{
-			sendReply(cl, "472 ERR_UNKNOWNMODE");
-			return ;
-    	}
-		if (c == 'i')
-			cmdIMode(cl, msg, it->second);
-		//else if (c == 't')
-			//cmdTMode(cl, msg, it->second);
-		else if (c == 'k')
-			cmdKMode(cl, msg, it->second);
-		else if (c == 'o')
-			cmdOMode(cl, msg, it->second);
-		else if (c == 'l')
-			cmdLMode(cl, msg, it->second);
+	if (msg.params.size () < 2  || msg.params[1].size() < 2)
+	{
+		sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+		return ;
 	}
+	char c = msg.params[1][1];
+	if (msg.params[1].size() > 2 || (c != 'i' && c != 't' && c != 'k' && c != 'o' && c != 'l'))
+	{
+		sendReply(cl, "472 ERR_UNKNOWNMODE");
+		return ;
+	}
+	if (c == 'i')
+		cmdIMODE(cl, msg, channel);
+	else if (c == 't')
+		cmdTMODE(cl, msg, channel);
+	else if (c == 'k')
+		cmdKMODE(cl, msg, channel);
+	else if (c == 'o')
+		cmdOMODE(cl, msg, channel);
+	else if (c == 'l')
+		cmdLMODE(cl, msg, channel);
 }
 
-void 	Commands::cmdIMode(client&cl, Message msg, Channel &channel) {
+void 	Commands::cmdIMODE(client&cl, Message msg, Channel &channel) {
 	(void)cl;
 	if (msg.params[1][0] == '+')
 		channel.setInviteOnly(true);
@@ -272,23 +284,29 @@ void 	Commands::cmdIMode(client&cl, Message msg, Channel &channel) {
 		channel.setInviteOnly(false);
 }
 
-void 	cmdTMode(client&cl, Message msg, Channel &channel);		
-
-void 	Commands::cmdKMode(client&cl, Message msg, Channel &channel) {
-	std::string key;
-	if (msg.params.size() < 3)
-	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    } 
+void 	Commands::cmdTMODE(client&cl, Message msg, Channel &channel) {
+	(void)cl;
 	if (msg.params[1][0] == '+')
-		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+		channel.setTopicRestricted(true);
 	else if (msg.params[1][0] == '-')
-		channel.setChannelKey(key);
-
+		channel.setTopicRestricted(false);
 }
 
-void 	Commands::cmdOMode(client&cl, Message msg, Channel &channel) {
+void 	Commands::cmdKMODE(client&cl, Message msg, Channel &channel) {
+	std::string key = "";
+	if (msg.params[1][0] == '+') {
+		if (msg.params.size() < 3)
+		{
+			sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+			return ;
+		}
+		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+	}
+	else if (msg.params[1][0] == '-')
+		channel.setChannelKey(key);
+}
+
+void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
 	if (msg.params.size() < 3)
 	{
         sendReply(cl, "461 ERR_NEEDMOREPARAMS");
@@ -332,12 +350,7 @@ void 	Commands::cmdOMode(client&cl, Message msg, Channel &channel) {
 	}
 }
 	
-void 	Commands::cmdLMode(client&cl, Message msg, Channel &channel) {
-	if (msg.params.size() < 3)
-	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    } 
+void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
 	if (msg.params[1][0] == '+') {
 		if (msg.params.size() < 3)
 		{
@@ -360,6 +373,11 @@ void 	Commands::cmdLMode(client&cl, Message msg, Channel &channel) {
 }
 
 
+//--------KICK--------
+//void Commands::cmdKICK(client &cl, Message msg)
+//{
+//}
+
 
 //DISPATCH---------------------------------------------------------
 
@@ -374,17 +392,17 @@ void Commands::dispatch(client& cl, Message msg)
 
 	if (msg.command == "QUIT")
 	{
-		cmdQuit(cl, msg);
+		cmdQUIT(cl, msg);
 		return;
 	}
 	if (!cl.isUsernameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
 	{
 		if (msg.command == "PASS")
-			cmdPass(cl, msg);
+			cmdPASS(cl, msg);
 		else if (msg.command == "NICK")
-			cmdNick(cl, msg);
+			cmdNICK(cl, msg);
 		else if (msg.command == "USER")
-			cmdUser(cl, msg);
+			cmdUSER(cl, msg);
 		else if (cmd_exist(msg.command) == true)
 		{
 			sendReply(cl, "451 ERR_NOTREGISTERED :You have not registered");
@@ -396,7 +414,7 @@ void Commands::dispatch(client& cl, Message msg)
 		if (msg.command == "PRIVMSG")
 		{
 			std::cout << "ouais la team" << std::endl;
-			cmdPrivmsg(cl, msg);
+			cmdPRIVMSG(cl, msg);
 		}
 		else if (msg.command == "JOIN")
 		{
@@ -404,7 +422,21 @@ void Commands::dispatch(client& cl, Message msg)
 			std::cout << "parfait" << std::endl;
 		}
 		else if (msg.command == "MODE")
-			cmdMode(cl, msg);
+		{
+			if (msg.params.empty())
+			{
+				sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+				return;
+			}
+			Channel* channel = getChannel(cl, msg.params[0]);
+			if (channel != NULL)
+				cmdMODE(cl, msg, *channel);
+		}
+	}
+	else
+	{
+		sendReply(cl, "421  ERR_UNKNOWNCOMMAND");
+		return;
 	}
 }
 
