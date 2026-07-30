@@ -17,6 +17,7 @@ class Commands
 		void	sendWelcome(client& cl);
 		void	checkRegistration(client& cl);
 		Channel*	getChannel(client& cl, const std::string& rawName);
+		client*		getUser(client& cl, const std::string& nick);
 
 	public:
 		Commands(serv* server);
@@ -38,7 +39,8 @@ class Commands
 		void 	cmdKMODE(client& cl, Message msg, Channel &channel);
 		void 	cmdOMODE(client& cl, Message msg, Channel &channel);
 		void 	cmdLMODE(client& cl, Message msg, Channel &channel);
-		void 	cmdKICK(client& cl, Message msg);
+		void 	cmdKICK(client& cl, Message msg, Channel& channel);
+		void 	cmdINVITE(client& cl, Message msg, Channel& channel);
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/27 16:24:08 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/30 16:17:27 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/30 17:51:25 by juliette-ma      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,26 +43,31 @@ class Channel
 		~Channel();
 
 		//METHODS
-		void add_user(client& cl);
-		void add_operator(client& cl);
-		void removeOperator(client& cl);
+		void                add_user(client& cl);
+		void                add_operator(client& cl);
+		void                removeOperator(client& cl);
+        void                removeUser(client& cl);
+        
 		//SETTER
-		void setInviteOnly(bool value);
-		void setTopicRestricted(bool value);
-		void setChannelKey(std::string& key);
-		void setUserLimit(unsigned int u);
-		void setTopic(std::string& topic);
-		void broadcast(client& cl, Message& msg);
-		bool user_present(client& cl);
+		void                setInviteOnly(bool value);
+		void                setTopicRestricted(bool value);
+		void                setChannelKey(std::string& key);
+		void                setUserLimit(unsigned int u);
+		void                setTopic(std::string& topic);
+		void                broadcast(client& cl, Message& msg);
+		bool                user_present(client& cl);
+		bool                isOperator(client& cl);
+        
 		//GETTER
-		bool isInviteOnly() const;
-		bool isTopicRestricted() const;
-		std::string getChannelKey() const;
-		unsigned int getUserLimit() const;
-		std::string getTopic() const;
+		bool                isInviteOnly() const;
+		std::string         getName() const;
+		bool                isTopicRestricted() const;
+		std::string         getChannelKey() const;
+		unsigned int        getUserLimit() const;
+		std::string         getTopic() const;
 		std::vector<client*> getUserList() const;
 		std::vector<client*> getOperatorsList() const;
-        unsigned int getNumberOfUsers() const;
+        unsigned int        getNumberOfUsers() const;
 
 
 		void aff_users();

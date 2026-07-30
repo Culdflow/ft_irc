@@ -77,13 +77,24 @@ Channel* Commands::getChannel(client& cl, const std::string& rawName)
 		return NULL;
 	}
 	std::map<std::string, Channel>& channelList = _serv->getChannelList();
-	std::map<std::string, Channel>::iterator it = channelList.find(rawName.substr(1));
+	std::map<std::string, Channel>::iterator it = channelList.find(rawName);
 	if (it == channelList.end())
 	{
 		sendReply(cl, "403 ERR_NOSUCHCHANNEL");
 		return NULL;
 	}
 	return &it->second;
+}
+
+client* Commands::getUser(client& cl, const std::string& nick)
+{
+	client* recipient = _serv->findClientByNick(nick);
+	if (recipient == NULL)
+	{
+		sendReply(cl, "401 " + nick + " :No such nick/channel");
+		return NULL;
+	}
+	return recipient;
 }
 
 //COMMANDS-------------------------------------------------------------
@@ -171,12 +182,9 @@ void Commands::cmdPRIVMSG(client& cl, Message msg) {
 		return;
     }
 	const std::string& target = msg.params[0];
-	client* recipient = _serv->findClientByNick(target);
+	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
-	{
-		sendReply(cl, "401 " + target + " :No such nick/channel");
 		return;
-	}
 	std::string message;
 	for (std::vector<std::string>::iterator it = msg.params.begin() + 1; it != msg.params.end(); it++)
 		message = message + *it + " ";
@@ -210,7 +218,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
     }
     std::map<std::string, Channel>& channelList = _serv->getChannelList();
     std::map<std::string, Channel>::iterator it;
-	std::string name = msg.params[0].substr(1);
+	std::string name = msg.params[0];
     it = channelList.find(name);
     if(it != channelList.end())
     {
@@ -241,7 +249,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
         Channel channel(name);
         channel.add_user(cl);
         channel.add_operator(cl);
-        channelList[name] = Channel(name);
+        channelList[name] = channel;
     }
 }
 
@@ -251,6 +259,11 @@ void 	Commands::cmdMODE(client& cl, Message msg, Channel& channel) {
 	if (!channel.user_present(cl))
 	{
 		sendReply(cl, "442  ERR_NOTONCHANNEL");
+        return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, "482 ERR_CHANOPRIVSNEEDED");
         return ;
 	}
 	if (msg.params.size () < 2  || msg.params[1].size() < 2)
@@ -313,40 +326,23 @@ void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
         return ;
     }
 	const std::string& target = msg.params[2];
-	client* recipient = _serv->findClientByNick(target);
+	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
-	{
-		sendReply(cl, "401 " + target + " :No such nick/channel");
 		return;
-	}
-	std::vector<client*>::iterator it_users;
-	std::vector<client*>::iterator it_operators;
-	for (it_operators = channel.getOperatorsList().begin(); it_operators != channel.getOperatorsList().end(); it_operators++) {
-		if (*it_operators == recipient) {
-			if (msg.params[1][0] == '+')
-				return;
-			else if (msg.params[1][0] == '-')
-			{
-				channel.removeOperator(*recipient);
-				return;
-			}
-		}
-	}
-	for (it_users = channel.getUserList().begin(); it_users != channel.getUserList().end(); it_users++) {
-		if (*it_users == recipient) {
-			if (msg.params[1][0] == '+')
-			{
-				channel.add_operator(*recipient);
-				return;
-			}
-			else if (msg.params[1][0] == '-')
-				return;
-		}
-	}
-	if (it_users == channel.getUserList().end() && it_operators == channel.getOperatorsList().end()) 
+	if (!channel.user_present(*recipient))
 	{
 		sendReply(cl, "441 ERR_USERNOTINCHANNEL");
 		return;
+	}
+	if (msg.params[1][0] == '+')
+	{
+		if (!channel.isOperator(*recipient))
+			channel.add_operator(*recipient);
+	}
+	else if (msg.params[1][0] == '-')
+	{
+		if (channel.isOperator(*recipient))
+			channel.removeOperator(*recipient);
 	}
 }
 	
@@ -374,9 +370,84 @@ void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
 
 
 //--------KICK--------
-//void Commands::cmdKICK(client &cl, Message msg)
-//{
-//}
+// msg.command = KICK
+// msg.params[0] = channel checke par dispatch
+// msg.params[1] = user
+// msg.params[2] = :reason
+void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
+{
+	if (!channel.user_present(cl))
+	{
+		sendReply(cl, "442  ERR_NOTONCHANNEL");
+        return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, "482 ERR_CHANOPRIVSNEEDED");
+        return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+		return;
+	}
+	const std::string& target = msg.params[1];
+	client* recipient = getUser(cl, target);
+	if (recipient == NULL)
+		return;
+	if (!channel.user_present(*recipient))
+	{
+		sendReply(cl, "441 ERR_USERNOTINCHANNEL");
+		return;
+	}
+	if (channel.isOperator(*recipient))
+		channel.removeOperator(*recipient);
+	channel.removeUser(*recipient);
+
+	// pour envoyer le message a tous les users du channel si commentaire
+	if (msg.params.size() > 2) {
+		std::string comment;
+		for (size_t i = 2; i < msg.params.size(); i++) {
+			comment = comment + " " + msg.params[i];
+		}
+	}
+}
+
+
+//--------INVITE--------
+// msg.command = INVITE
+// msg.params[0] = user 
+// msg.params[1] = channel checke par dispatch
+void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
+{
+	if (!channel.user_present(cl))
+	{
+		sendReply(cl, "442  ERR_NOTONCHANNEL");
+        return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, "482 ERR_CHANOPRIVSNEEDED");
+        return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+		return;
+	}
+	const std::string& target = msg.params[0];
+	client* recipient = getUser(cl, target);
+	if (recipient == NULL)
+		return;
+	if (channel.user_present(*recipient))
+	{
+		sendReply(cl, "443 " + target + " " + channel.getName() + " :is already on channel");
+		return;
+	}
+	channel.add_user(*recipient);
+	sendLine(*recipient, ":" + cl.getNick() + "!" + cl.getUsername() + "@ircserv INVITE " + target + " :" + channel.getName());
+	sendReply(cl, "341 " + target + " " + channel.getName() + " :RPL_INVITING");
+}
 
 
 //DISPATCH---------------------------------------------------------
@@ -412,25 +483,38 @@ void Commands::dispatch(client& cl, Message msg)
 	else if (cmd_exist(msg.command) == true)
 	{
 		if (msg.command == "PRIVMSG")
-		{
-			std::cout << "ouais la team" << std::endl;
 			cmdPRIVMSG(cl, msg);
-		}
 		else if (msg.command == "JOIN")
 		{
 			cmdJOIN(cl, msg);
 			std::cout << "parfait" << std::endl;
 		}
-		else if (msg.command == "MODE")
+		else if (msg.command == "MODE" || msg.command == "KICK" || msg.command == "INVITE" || msg.command == "TOPIC")
 		{
 			if (msg.params.empty())
 			{
 				sendReply(cl, "461 ERR_NEEDMOREPARAMS");
 				return;
 			}
-			Channel* channel = getChannel(cl, msg.params[0]);
-			if (channel != NULL)
+			size_t channelIndex;
+			if (msg.command == "INVITE")
+				channelIndex = 1;
+			else
+				channelIndex = 0;
+			if (msg.params.size() <= channelIndex)
+			{
+				sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+				return;
+			}
+			Channel* channel = getChannel(cl, msg.params[channelIndex]);
+			if (!channel)
+				return;
+			if (msg.command == "MODE")
 				cmdMODE(cl, msg, *channel);
+			else if (msg.command == "INVITE")
+				cmdINVITE(cl, msg, *channel);
+			else if (msg.command == "KICK")
+				cmdKICK(cl, msg, *channel);
 		}
 	}
 	else

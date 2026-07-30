@@ -51,6 +51,17 @@ void Channel::removeOperator(client &cl)
 	}
 }
 
+void Channel::removeUser(client &cl)
+{
+	std::vector<client *>::iterator it;
+	for (it = _users.begin(); it != _users.end(); it++)
+	{
+		if (*it == &cl)
+			_users.erase(it);
+	}
+}
+
+
 void Channel::setInviteOnly(bool value)
 {
 	_inviteOnly = value;
@@ -79,6 +90,11 @@ void Channel::setTopic(std::string &topic)
 bool Channel::isInviteOnly() const
 {
 	return _inviteOnly;
+}
+
+std::string Channel::getName() const
+{
+	return _name;
 }
 
 bool Channel::isTopicRestricted() const
@@ -139,6 +155,16 @@ void Channel::broadcast(client& cl, Message& msg)
 bool Channel::user_present(client& cl)
 {
     for(std::vector<client*>::iterator it = _users.begin(); it < _users.end(); it++)
+    {
+        if(*it == &cl)
+            return true;
+    }
+    return false;
+}
+
+bool Channel::isOperator(client& cl)
+{
+    for(std::vector<client*>::iterator it = _operators.begin(); it < _operators.end(); it++)
     {
         if(*it == &cl)
             return true;
