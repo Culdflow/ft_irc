@@ -1,7 +1,6 @@
 #include "Commands.hpp"
 #include "Server.hpp"
-#include "utils.hpp"
-#include <cctype> 
+
 
 //HELPER-----------------------------------------------------------
 
@@ -19,6 +18,13 @@ static bool isValidNick(const std::string& nick)
 			return false;
 	}
 	return true;
+}
+
+static std::string selfNick(client& cl)
+{
+	if (cl.getNick().empty())
+		return "*";
+	return cl.getNick();
 }
 
 //CONSTRUCTORS------------------------------------------------------
@@ -50,17 +56,6 @@ void Commands::sendReply(client& cl, const std::string& reply) {
 	sendLine(cl, ":ircserv " + reply);
 }
 
-void Commands::sendWelcome(client& cl)
-{
-	std::string nick = cl.getNick();
-	std::string line001 = ":ircserv 001 " + nick + " :Welcome to the IRC network\r\n";
-
-	//debug
-	std::cout << "SENDING: [" << line001 << "]" << std::endl;
-	//
-	send(cl.getSocketFd(), line001.c_str(), line001.size(), 0);
-}
-
 void Commands::checkRegistration(client& cl)
 {
 	if (cl.isRegistered())
@@ -69,26 +64,78 @@ void Commands::checkRegistration(client& cl)
 	if (cl.isUsernameSet() && cl.isNickSet() && cl.isPaswdCorrect())
 	{
 		cl.setRegistered(true);
-		sendWelcome(cl);
+		sendReply(cl, Replies::welcome(cl.getNick()));
 	}
+}
+
+void Commands::broadcast(client& cl, Message& msg, Channel* channel)
+{
+    if(channel->user_present(cl) == true)
+    {
+		std::vector<client*> users = channel->getUserList();
+        for(std::vector<client*>::iterator it = users.begin(); it < users.end(); it++)
+        {
+            if(*it == &cl)
+                continue ;
+
+            std::string message = Relay::privmsg(Relay::prefix(cl.getNick(), cl.getUsername()), (*it)->getNick(), msg.params.back());
+            send((*it)->getSocketFd(), message.c_str(), message.size(), 0);
+        }
+    }
+    else
+    {
+        std::string out = ":ircserv " + Replies::notOnChannel(cl.getNick(), channel->getName()) + "\r\n";
+	    send(cl.getSocketFd(), out.c_str(), out.size(), 0);
+    }
+}
+
+
+Channel* Commands::getChannel(client& cl, const std::string& rawName)
+{
+	if (rawName.size() < 2 || rawName[0] != '#')
+	{
+		sendReply(cl, Replies::badChanMask(cl.getNick(), rawName));
+		return NULL;
+	}
+	std::map<std::string, Channel*>& channelList = _serv->getChannelList();
+	std::map<std::string, Channel*>::iterator it = channelList.find(rawName);
+	if (it == channelList.end())
+	{
+		sendReply(cl, Replies::noSuchChannel(cl.getNick(), rawName));
+		return NULL;
+	}
+	return it->second;
+}
+
+client* Commands::getUser(client& cl, const std::string& nick)
+{
+	client* recipient = _serv->findClientByNick(nick);
+	if (recipient == NULL)
+	{
+		sendReply(cl, Replies::noSuchNick(cl.getNick(), nick));
+		return NULL;
+	}
+	return recipient;
 }
 
 //COMMANDS-------------------------------------------------------------
 
-void Commands::cmdPass(client& cl, Message msg) {
+//--------AUTHENTIFICATION--------
+
+void Commands::cmdPASS(client& cl, Message msg) {
 	if (cl.isPaswdCorrect())
 	{
-		sendReply(cl, "462 * :You may not reregister");
+		sendReply(cl, Replies::alreadyRegistered(selfNick(cl)));
 		return;
 	}
 	if (msg.params.empty())
 	{
-		sendReply(cl, "461 * PASS :Not enough parameters");
+		sendReply(cl, Replies::needMoreParams(selfNick(cl), "PASS"));
 		return;
 	}
 	if (msg.params[0] != _serv->getPassword())
 	{
-		sendReply(cl, "464 * :Password incorrect");
+		sendReply(cl, Replies::passwdMismatch(selfNick(cl)));
 		cl.setShouldDisconnect(true);
 		return;
 	}
@@ -96,126 +143,142 @@ void Commands::cmdPass(client& cl, Message msg) {
 	checkRegistration(cl);
 }
 
-void Commands::cmdNick(client& cl, Message msg) {
+void Commands::cmdNICK(client& cl, Message msg) {
 	if (msg.params.empty())
 	{
-		sendReply(cl, "431 * :No nickname given");
+		sendReply(cl, Replies::noNicknameGiven(selfNick(cl)));
 		return;
 	}
 	const std::string& newNick = msg.params[0];
 	if (!isValidNick(newNick))
 	{
-		sendReply(cl, "432 * " + newNick + " :Erroneous nickname");
+		sendReply(cl, Replies::erroneusNickname(selfNick(cl), newNick));
 		return;
 	}
 	client* existing = _serv->findClientByNick(newNick);
 	if (existing != NULL && existing != &cl)
 	{
-		sendReply(cl, "433 * " + newNick + " :Nickname is already in use");
+		sendReply(cl, Replies::nicknameInUse(selfNick(cl), newNick));
 		return;
 	}
 	cl.setNick(newNick);
 	checkRegistration(cl);
 }
 
-void Commands::cmdUser(client& cl, Message msg) {
+void Commands::cmdUSER(client& cl, Message msg) {
 	if (msg.params.size() < 4)
 	{
-		sendReply(cl, "461 * USER :Not enough parameters");
+		sendReply(cl, Replies::needMoreParams(selfNick(cl), "USER"));
 		return;
 	}
 	if (cl.isUsernameSet())
 	{
-		sendReply(cl, "462 * :You may not reregister");
+		sendReply(cl, Replies::alreadyRegistered(selfNick(cl)));
 		return;
 	}
 	cl.setUsername(msg.params[0]);
-	cl.setRealName(msg.params[3]);
+	cl.setRealName(msg.params.back());
 	checkRegistration(cl);
 }
 
-void Commands::cmdPrivmsg(client& cl, Message msg) {
+//--------PRIVMSG--------
+
+void Commands::cmdPRIVMSG(client& cl, Message msg) {
 	if (msg.params.empty())
 	{
-		sendReply(cl, "411 * :No recipient given (PRIVMSG)");
+		sendReply(cl, Replies::noRecipient(cl.getNick(), "PRIVMSG"));
 		return;
 	}
 	if (msg.params.size() < 2)
 	{
-		sendReply(cl, "412 * :No text to send");
+		sendReply(cl, Replies::noTextToSend(cl.getNick()));
 		return;
 	}
 	if(msg.params[0][0] == '#')
     {
-        if(msg.params[0][1] == '\0')
-		{
-			sendReply(cl, "476 ERR_BADCHANMASK");
+		Channel* channel = getChannel(cl, msg.params[0]);
+		if (channel == NULL)
 			return;
-		}
-		std::string name_chan = msg.params[0].substr(1);
+		std::string name_chan = msg.params[0];
 		if(_serv->channel_exist(name_chan))
     	{
-			// std::map<std::string, Channel> tmp = serv.getChannelList();
-			std::map<std::string, Channel*>::iterator it = _serv->getChannelList().find(name_chan);
-			it->second->broadcast(cl, msg);
+			broadcast(cl, msg, channel);
 			return;
 		}
 		else
 		{
-        	sendReply(cl, "403  ERR_NOSUCHCHANNEL");
+        	sendReply(cl, Replies::noSuchChannel(cl.getNick(), channel->getName()));
 			return;
 		}
     }
 	const std::string& target = msg.params[0];
-	client* recipient = _serv->findClientByNick(target);
+	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
-	{
-		sendReply(cl, "401 " + target + " :No such nick/channel");
 		return;
-	}
-	std::string message;
-	for (std::vector<std::string>::iterator it = msg.params.begin() + 1; it != msg.params.end(); it++)
-		message = message + *it + " ";
-	std::cout<<"yoooooooooo\n";
-	sendLine(*recipient, ":" + cl.getNick() + "!" + cl.getUsername() + "@ircserv PRIVMSG " + target + " :" + message);
+	sendLine(*recipient, Relay::privmsg(Relay::prefix(cl.getNick(), cl.getUsername()), target, msg.params.back()));
 }
 
-void Commands::cmdQuit(client& cl, Message msg) {
+//--------QUIT--------
+
+void Commands::cmdQUIT(client& cl, Message msg) {
 	if (msg.params.empty())
 		sendLine(cl, "ERROR :Closing Link: Client Quit");
 	else
 		sendLine(cl, "ERROR :Closing Link: " + msg.params[0]);
 	cl.setShouldDisconnect(true);
+	//TO DO --- 
+	// Broadcast dans les channel ou il était présent
+	// Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason)
 }
+
+//--------JOIN--------
 
 void Commands::cmdJOIN(client& cl, Message msg)
 {
     if(msg.params.size() < 1)
     {
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        sendReply(cl, Replies::needMoreParams(cl.getNick(), "JOIN"));
         return ;
     }
     if(msg.params[0][0] != '#' || (msg.params[0][0] && msg.params[0][1] == '\0'))
     {
-        sendReply(cl, "476 ERR_BADCHANMASK");
+        sendReply(cl, Replies::badChanMask(cl.getNick(), msg.params[0]));
         return ;
     }
     std::map<std::string, Channel*>& channelList = _serv->getChannelList();
     std::map<std::string, Channel*>::iterator it;
-	std::string name = msg.params[0].substr(1);
+	std::string name = msg.params[0];
     it = channelList.find(name);
     if(it != channelList.end())
     {
+		if (it->second->isInviteOnly() == true) 
+		{
+			sendReply(cl, Replies::inviteOnlyChan(cl.getNick(), name));
+        	return ;
+		}
+		if (!it->second->getChannelKey().empty())
+		{
+			std::string channelKey = it->second->getChannelKey();
+			if (msg.params.size() < 2 || msg.params[1] != channelKey)
+			{
+				sendReply(cl, Replies::badChannelKey(cl.getNick(), name));
+				return ;
+			}
+		}
+		if (it->second->getNumberOfUsers() >= it->second->getUserLimit())
+		{
+			sendReply(cl, Replies::channelIsFull(cl.getNick(), name));
+        	return ;
+		}
 		if(it->second->user_present(cl) == true)
 		{
-        	sendReply(cl, "443  ERR_USERONCHANNEL");
+        	sendReply(cl, Replies::notOnChannel(cl.getNick(), name));
         	return ;
     	}
         it->second->add_user(cl);
     }
     else
     {
-		std::cout << "salut la team\n";
         Channel *channel = new Channel(name);
         channel->add_user(cl);
         channel->add_operator(cl);
@@ -223,53 +286,51 @@ void Commands::cmdJOIN(client& cl, Message msg)
     }
 }
 
-// /mode (channel) (+ | -) (mode) [parametres]
-// /mode #chez -sk CLEFPASS (enlève le mode secret et le mot de passe) 
-// · t: Set/remove the restrictions of the TOPIC command to channel operators
-void 	Commands::cmdMode(client& cl, Message msg) {
-	if (msg.params.empty())
+//--------MODE--------
+
+void 	Commands::cmdMODE(client& cl, Message msg, Channel& channel) {
+	if (!channel.user_present(cl))
 	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    }
-	if(msg.params[0][0] != '#')
-    {
-        sendReply(cl, "476 ERR_BADCHANMASK");
-        return ;
-    }
-	std::map<std::string, Channel>& channelList = _serv->getChannelList();
-    std::map<std::string, Channel>::iterator it = channelList.find(msg.params[0].substr(1));
-	if (it == channelList.end()) {
-		sendReply(cl, "403 ERR_NOSUCHCHANNEL");
+		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName()));       
+		return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
         return ;
 	}
-	else {
-		if (msg.params.size () < 2  || msg.params[1].size() < 2)
-		{
-			sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-			return ;
-		}
-		char c = msg.params[1][1];
-		std::cout << "debug mode : " << c << std::endl;
-		if (msg.params[1].size() > 2 || (c != 'i' && c != 't' && c != 'k' && c != 'o' && c != 'l'))
-		{
-			sendReply(cl, "472 ERR_UNKNOWNMODE");
-			return ;
-    	}
-		if (c == 'i')
-			cmdIMode(cl, msg, it->second);
-		//else if (c == 't')
-			//cmdTMode(cl, msg, it->second);
-		else if (c == 'k')
-			cmdKMode(cl, msg, it->second);
-		else if (c == 'o')
-			cmdOMode(cl, msg, it->second);
-		else if (c == 'l')
-			cmdLMode(cl, msg, it->second);
+	if (msg.params.size () < 2  || msg.params[1].size() < 2)
+	{
+		sendReply(cl,  Replies::needMoreParams(cl.getNick(), "MODE"));
+		return ;
 	}
+	char c = msg.params[1][1];
+	if (msg.params[1].size() > 2 || (c != 'i' && c != 't' && c != 'k' && c != 'o' && c != 'l'))
+	{
+		sendReply(cl, Replies::unknownMode(cl.getNick(), std::string(1, c)));
+		return ;
+	}
+	if (c == 'i')
+		cmdIMODE(cl, msg, channel);
+	else if (c == 't')
+		cmdTMODE(cl, msg, channel);
+	else if (c == 'k')
+		cmdKMODE(cl, msg, channel);
+	else if (c == 'o')
+		cmdOMODE(cl, msg, channel);
+	else if (c == 'l')
+		cmdLMODE(cl, msg, channel);
+	
+	//TO DO -----
+	//broadcast au channel le mode utilisé
+	// if (msg.params.size() > 2)
+	// 	broadcast(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]));
+	// else
+	// 	broadcast(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""));
+
 }
 
-void 	Commands::cmdIMode(client&cl, Message msg, Channel &channel) {
+void 	Commands::cmdIMODE(client&cl, Message msg, Channel &channel) {
 	(void)cl;
 	if (msg.params[1][0] == '+')
 		channel.setInviteOnly(true);
@@ -277,76 +338,60 @@ void 	Commands::cmdIMode(client&cl, Message msg, Channel &channel) {
 		channel.setInviteOnly(false);
 }
 
-void 	cmdTMode(client&cl, Message msg, Channel &channel);		
-
-void 	Commands::cmdKMode(client&cl, Message msg, Channel &channel) {
-	std::string key;
-	if (msg.params.size() < 3)
-	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    } 
+void 	Commands::cmdTMODE(client&cl, Message msg, Channel &channel) {
+	(void)cl;
 	if (msg.params[1][0] == '+')
-		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+		channel.setTopicRestricted(true);
 	else if (msg.params[1][0] == '-')
-		channel.setChannelKey(key);
-
+		channel.setTopicRestricted(false);
 }
 
-void 	Commands::cmdOMode(client&cl, Message msg, Channel &channel) {
-	if (msg.params.size() < 3)
-	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    }
-	const std::string& target = msg.params[2];
-	client* recipient = _serv->findClientByNick(target);
-	if (recipient == NULL)
-	{
-		sendReply(cl, "401 " + target + " :No such nick/channel");
-		return;
-	}
-	std::vector<client*>::iterator it_users;
-	std::vector<client*>::iterator it_operators;
-	for (it_operators = channel.getOperatorsList().begin(); it_operators != channel.getOperatorsList().end(); it_operators++) {
-		if (*it_operators == recipient) {
-			if (msg.params[1][0] == '+')
-				return;
-			else if (msg.params[1][0] == '-')
-			{
-				channel.removeOperator(*recipient);
-				return;
-			}
-		}
-	}
-	for (it_users = channel.getUserList().begin(); it_users != channel.getUserList().end(); it_users++) {
-		if (*it_users == recipient) {
-			if (msg.params[1][0] == '+')
-			{
-				channel.add_operator(*recipient);
-				return;
-			}
-			else if (msg.params[1][0] == '-')
-				return;
-		}
-	}
-	if (it_users == channel.getUserList().end() && it_operators == channel.getOperatorsList().end()) 
-	{
-		sendReply(cl, "441 ERR_USERNOTINCHANNEL");
-		return;
-	}
-}
-	
-void 	Commands::cmdLMode(client&cl, Message msg, Channel &channel) {
-	if (msg.params.size() < 3)
-	{
-        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
-        return ;
-    } 
+void 	Commands::cmdKMODE(client&cl, Message msg, Channel &channel) {
+	std::string key = "";
 	if (msg.params[1][0] == '+') {
 		if (msg.params.size() < 3)
 		{
-        	sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+			sendReply(cl, Replies::needMoreParams(cl.getNick(), "MODE"));
+			return ;
+		}
+		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+	}
+	else if (msg.params[1][0] == '-')
+		channel.setChannelKey(key);
+}
+
+void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
+	if (msg.params.size() < 3)
+	{
+        sendReply(cl,  Replies::needMoreParams(cl.getNick(), "MODE"));
+        return ;
+    }
+	const std::string& target = msg.params[2];
+	client* recipient = getUser(cl, target);
+	if (recipient == NULL)
+		return;
+	if (!channel.user_present(*recipient))
+	{
+		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));
+		return;
+	}
+	if (msg.params[1][0] == '+')
+	{
+		if (!channel.isOperator(*recipient))
+			channel.add_operator(*recipient);
+	}
+	else if (msg.params[1][0] == '-')
+	{
+		if (channel.isOperator(*recipient))
+			channel.removeOperator(*recipient);
+	}
+}
+	
+void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
+	if (msg.params[1][0] == '+') {
+		if (msg.params.size() < 3)
+		{
+        	sendReply(cl,  Replies::needMoreParams(cl.getNick(), "MODE"));
         	return ;
     	}
 		long limit;
@@ -354,7 +399,7 @@ void 	Commands::cmdLMode(client&cl, Message msg, Channel &channel) {
 		limit = strtol(msg.params[2].c_str(), &end, 10);
 		if (*end != '\0' || limit <= 0 || limit > INT_MAX) 
 		{
-        	sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        	sendReply(cl,  Replies::needMoreParams(cl.getNick(), "MODE"));
         	return ;
     	}
 		else
@@ -365,6 +410,122 @@ void 	Commands::cmdLMode(client&cl, Message msg, Channel &channel) {
 }
 
 
+//--------KICK--------
+// msg.command = KICK
+// msg.params[0] = channel checke par dispatch
+// msg.params[1] = user
+// msg.params[2] = :reason
+void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
+{
+	if (!channel.user_present(cl))
+	{
+		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName()));
+        return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
+        return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendReply(cl,  Replies::needMoreParams(cl.getNick(), "KICK"));
+		return;
+	}
+	const std::string& target = msg.params[1];
+	client* recipient = getUser(cl, target);
+	if (recipient == NULL)
+		return;
+	if (!channel.user_present(*recipient))
+	{
+		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));
+		return;
+	}
+	if (channel.isOperator(*recipient))
+		channel.removeOperator(*recipient);
+	channel.removeUser(*recipient);
+
+	// broadcast a tous les utilisateurs (+ avec le commentaire si msg.params.size() > 2)
+	// pour envoyer le message a tous les users du channel si commentaire
+}
+
+
+//--------INVITE--------
+// msg.command = INVITE
+// msg.params[0] = user 
+// msg.params[1] = channel checke par dispatch
+void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
+{
+	if (!channel.user_present(cl))
+	{
+		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName()));        
+		return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
+        return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
+		return;
+	}
+	const std::string& target = msg.params[0];
+	client* recipient = getUser(cl, target);
+	if (recipient == NULL)
+		return;
+	if (channel.user_present(*recipient))
+	{
+		sendReply(cl, Replies::userOnChannel(cl.getNick(), target, channel.getName()));
+		return;
+	}
+	channel.add_user(*recipient);
+	sendLine(*recipient, Relay::invite(Relay::prefix(cl.getNick(), cl.getUsername()), target, channel.getName()));
+	sendReply(cl, Replies::inviting(cl.getNick(), channel.getName(), target));
+}
+
+//--------TOPIC--------
+// msg.command = TOPIC
+// msg.params[0] = channel checke par dispatch
+// msg.params[1] = optionnel, changement de topic ou suppression 
+
+void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
+{
+	if (!channel.user_present(cl))
+	{
+		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName())); 
+		return ;
+	}
+	if (msg.params.size() == 1)
+	{
+		{
+			if (channel.getTopic().empty())
+			{
+				sendReply(cl, Replies::notopic(cl.getNick(), channel.getName()));
+				return;
+			}
+		}
+		sendLine(cl, Replies::topic(cl.getNick(), channel.getName(), channel.getTopic()));
+		return;
+	}
+	else
+	{
+		if (channel.isTopicRestricted() == true && !channel.isOperator(cl)) 
+		{
+			sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
+			return ;
+		}
+		std::string topic;
+		if (msg.params[1][0] == ':' && msg.params[1].size() == 1)
+			topic = "";
+		else
+			topic = msg.params[1];
+		channel.setTopic(topic);
+		// TO DO -----
+		// broadcast(Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()));
+	}
+}
 
 //DISPATCH---------------------------------------------------------
 
@@ -379,37 +540,63 @@ void Commands::dispatch(client& cl, Message msg)
 
 	if (msg.command == "QUIT")
 	{
-		cmdQuit(cl, msg);
+		cmdQUIT(cl, msg);
 		return;
 	}
 	if (!cl.isUsernameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
 	{
 		if (msg.command == "PASS")
-			cmdPass(cl, msg);
+			cmdPASS(cl, msg);
 		else if (msg.command == "NICK")
-			cmdNick(cl, msg);
+			cmdNICK(cl, msg);
 		else if (msg.command == "USER")
-			cmdUser(cl, msg);
+			cmdUSER(cl, msg);
 		else if (cmd_exist(msg.command) == true)
 		{
-			sendReply(cl, "451 ERR_NOTREGISTERED :You have not registered");
+			sendReply(cl, Replies::notRegistered(selfNick(cl)));
 			return;
 		}
 	}
 	else if (cmd_exist(msg.command) == true)
 	{
 		if (msg.command == "PRIVMSG")
-		{
-			std::cout << "ouais la team" << std::endl;
-			cmdPrivmsg(cl, msg);
-		}
+			cmdPRIVMSG(cl, msg);
 		else if (msg.command == "JOIN")
-		{
 			cmdJOIN(cl, msg);
-			std::cout << "parfait" << std::endl;
+		else if (msg.command == "MODE" || msg.command == "KICK" || msg.command == "INVITE" || msg.command == "TOPIC")
+		{
+			if (msg.params.empty())
+			{
+				sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
+				return;
+			}
+			size_t channelIndex;
+			if (msg.command == "INVITE")
+				channelIndex = 1;
+			else
+				channelIndex = 0;
+			if (msg.params.size() <= channelIndex)
+			{
+				sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
+				return;
+			}
+			Channel* channel = getChannel(cl, msg.params[channelIndex]);
+			if (!channel)
+				return;
+			if (msg.command == "MODE")
+				cmdMODE(cl, msg, *channel);
+			else if (msg.command == "INVITE")
+				cmdINVITE(cl, msg, *channel);
+			else if (msg.command == "KICK")
+				cmdKICK(cl, msg, *channel);
+			else if (msg.command == "TOPIC")
+				cmdTOPIC(cl, msg, *channel);
 		}
-		else if (msg.command == "MODE")
-			cmdMode(cl, msg);
+	}
+	else
+	{
+		sendReply(cl, Replies::unknownCommand(cl.getNick(), msg.command));
+		return;
 	}
 }
 

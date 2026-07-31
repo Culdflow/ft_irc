@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
 
 #include <string>
 
@@ -40,3 +41,5 @@ class	client
 		void	setRegistered(bool registered);
 		void	setShouldDisconnect(bool value);
 };
+
+#endif

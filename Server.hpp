@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
 #include "ft_irc.hpp"
 #include "Channels.hpp"
@@ -61,3 +62,5 @@ class serv
 };
 
 std::vector<std::string> split(const std::string& s, char delimiter);
+
+#endif
