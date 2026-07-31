@@ -1,7 +1,7 @@
 #include "Commands.hpp"
 #include "Server.hpp"
 #include "utils.hpp"
-#include <cctype>
+#include <cctype> 
 
 //HELPER-----------------------------------------------------------
 
@@ -223,6 +223,149 @@ void Commands::cmdJOIN(client& cl, Message msg)
     }
 }
 
+// /mode (channel) (+ | -) (mode) [parametres]
+// /mode #chez -sk CLEFPASS (enlève le mode secret et le mot de passe) 
+// · t: Set/remove the restrictions of the TOPIC command to channel operators
+void 	Commands::cmdMode(client& cl, Message msg) {
+	if (msg.params.empty())
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    }
+	if(msg.params[0][0] != '#')
+    {
+        sendReply(cl, "476 ERR_BADCHANMASK");
+        return ;
+    }
+	std::map<std::string, Channel>& channelList = _serv->getChannelList();
+    std::map<std::string, Channel>::iterator it = channelList.find(msg.params[0].substr(1));
+	if (it == channelList.end()) {
+		sendReply(cl, "403 ERR_NOSUCHCHANNEL");
+        return ;
+	}
+	else {
+		if (msg.params.size () < 2  || msg.params[1].size() < 2)
+		{
+			sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+			return ;
+		}
+		char c = msg.params[1][1];
+		std::cout << "debug mode : " << c << std::endl;
+		if (msg.params[1].size() > 2 || (c != 'i' && c != 't' && c != 'k' && c != 'o' && c != 'l'))
+		{
+			sendReply(cl, "472 ERR_UNKNOWNMODE");
+			return ;
+    	}
+		if (c == 'i')
+			cmdIMode(cl, msg, it->second);
+		//else if (c == 't')
+			//cmdTMode(cl, msg, it->second);
+		else if (c == 'k')
+			cmdKMode(cl, msg, it->second);
+		else if (c == 'o')
+			cmdOMode(cl, msg, it->second);
+		else if (c == 'l')
+			cmdLMode(cl, msg, it->second);
+	}
+}
+
+void 	Commands::cmdIMode(client&cl, Message msg, Channel &channel) {
+	(void)cl;
+	if (msg.params[1][0] == '+')
+		channel.setInviteOnly(true);
+	else if (msg.params[1][0] == '-')
+		channel.setInviteOnly(false);
+}
+
+void 	cmdTMode(client&cl, Message msg, Channel &channel);		
+
+void 	Commands::cmdKMode(client&cl, Message msg, Channel &channel) {
+	std::string key;
+	if (msg.params.size() < 3)
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    } 
+	if (msg.params[1][0] == '+')
+		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+	else if (msg.params[1][0] == '-')
+		channel.setChannelKey(key);
+
+}
+
+void 	Commands::cmdOMode(client&cl, Message msg, Channel &channel) {
+	if (msg.params.size() < 3)
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    }
+	const std::string& target = msg.params[2];
+	client* recipient = _serv->findClientByNick(target);
+	if (recipient == NULL)
+	{
+		sendReply(cl, "401 " + target + " :No such nick/channel");
+		return;
+	}
+	std::vector<client*>::iterator it_users;
+	std::vector<client*>::iterator it_operators;
+	for (it_operators = channel.getOperatorsList().begin(); it_operators != channel.getOperatorsList().end(); it_operators++) {
+		if (*it_operators == recipient) {
+			if (msg.params[1][0] == '+')
+				return;
+			else if (msg.params[1][0] == '-')
+			{
+				channel.removeOperator(*recipient);
+				return;
+			}
+		}
+	}
+	for (it_users = channel.getUserList().begin(); it_users != channel.getUserList().end(); it_users++) {
+		if (*it_users == recipient) {
+			if (msg.params[1][0] == '+')
+			{
+				channel.add_operator(*recipient);
+				return;
+			}
+			else if (msg.params[1][0] == '-')
+				return;
+		}
+	}
+	if (it_users == channel.getUserList().end() && it_operators == channel.getOperatorsList().end()) 
+	{
+		sendReply(cl, "441 ERR_USERNOTINCHANNEL");
+		return;
+	}
+}
+	
+void 	Commands::cmdLMode(client&cl, Message msg, Channel &channel) {
+	if (msg.params.size() < 3)
+	{
+        sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        return ;
+    } 
+	if (msg.params[1][0] == '+') {
+		if (msg.params.size() < 3)
+		{
+        	sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        	return ;
+    	}
+		long limit;
+		char *end;
+		limit = strtol(msg.params[2].c_str(), &end, 10);
+		if (*end != '\0' || limit <= 0 || limit > INT_MAX) 
+		{
+        	sendReply(cl, "461 ERR_NEEDMOREPARAMS");
+        	return ;
+    	}
+		else
+			channel.setUserLimit(limit);
+	}
+	if (msg.params[1][0] == '-')
+		channel.setUserLimit(INT_MAX);
+}
+
+
+
 //DISPATCH---------------------------------------------------------
 
 void Commands::dispatch(client& cl, Message msg)
@@ -265,6 +408,8 @@ void Commands::dispatch(client& cl, Message msg)
 			cmdJOIN(cl, msg);
 			std::cout << "parfait" << std::endl;
 		}
+		else if (msg.command == "MODE")
+			cmdMode(cl, msg);
 	}
 }
 
