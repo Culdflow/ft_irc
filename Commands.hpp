@@ -12,10 +12,9 @@ class Commands
 	private:
 		serv*	_serv;
 
-		void	sendLine(client& cl, const std::string& line);
-		void	sendReply(client& cl, const std::string& reply);
-		void	sendWelcome(client& cl);
-		void	checkRegistration(client& cl);
+		void		sendLine(client& cl, const std::string& line);
+		void		sendReply(client& cl, const std::string& reply);
+		void		checkRegistration(client& cl);
 		Channel*	getChannel(client& cl, const std::string& rawName);
 		client*		getUser(client& cl, const std::string& nick);
 
@@ -41,6 +40,7 @@ class Commands
 		void 	cmdLMODE(client& cl, Message msg, Channel &channel);
 		void 	cmdKICK(client& cl, Message msg, Channel& channel);
 		void 	cmdINVITE(client& cl, Message msg, Channel& channel);
+		void 	cmdTOPIC(client& cl, Message msg, Channel& channel);
 };
 
 #endif
