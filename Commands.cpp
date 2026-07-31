@@ -89,6 +89,18 @@ void Commands::broadcast(client& cl, Message& msg, Channel* channel)
     }
 }
 
+void Commands::broadcastToChannel(client &cl, std::string msg, Channel *channel)
+{
+	std::vector<client*> users = channel->getUserList();
+	for(std::vector<client*>::iterator it = users.begin(); it < users.end(); it++)
+	{
+		if(*it == &cl)
+			continue ;
+
+		send((*it)->getSocketFd(), msg.c_str(), msg.size(), 0);
+	}
+}
+
 
 Channel* Commands::getChannel(client& cl, const std::string& rawName)
 {
@@ -221,14 +233,18 @@ void Commands::cmdPRIVMSG(client& cl, Message msg) {
 //--------QUIT--------
 
 void Commands::cmdQUIT(client& cl, Message msg) {
+	std::string reason;
 	if (msg.params.empty())
-		sendLine(cl, "ERROR :Closing Link: Client Quit");
+		reason = "";
 	else
-		sendLine(cl, "ERROR :Closing Link: " + msg.params[0]);
+		reason = msg.params[0];
 	cl.setShouldDisconnect(true);
-	//TO DO --- 
-	// Broadcast dans les channel ou il était présent
-	// Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason)
+	std::vector<Channel*> channelList = cl.getChannels();
+	std::vector<Channel*>::iterator it;
+	for (it = channelList.begin(); it != channelList.end(); it++) {
+		cl.removeChannel(*it);
+		broadcastToChannel(cl, Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
+	}
 }
 
 //--------JOIN--------
@@ -276,14 +292,52 @@ void Commands::cmdJOIN(client& cl, Message msg)
         	return ;
     	}
         it->second->add_user(cl);
-    }
+		cl.getChannels().push_back(it->second);
+		broadcastToChannel(cl, Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name), it->second);
+	}
     else
     {
         Channel *channel = new Channel(name);
         channel->add_user(cl);
         channel->add_operator(cl);
         channelList[name] = channel;
+		cl.getChannels().push_back(channel);
+		sendLine(cl, Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name));
     }
+}
+
+//--------INVITE--------
+
+void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
+{
+	if (!channel.user_present(cl))
+	{
+		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName()));        
+		return ;
+	}
+	if (!channel.isOperator(cl))
+	{
+		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
+        return ;
+	}
+	if (msg.params.size() < 2)
+	{
+		sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
+		return;
+	}
+	const std::string& target = msg.params[0];
+	client* recipient = getUser(cl, target);
+	if (recipient == NULL)
+		return;
+	if (channel.user_present(*recipient))
+	{
+		sendReply(cl, Replies::userOnChannel(cl.getNick(), target, channel.getName()));
+		return;
+	}
+	channel.add_user(*recipient);
+	cl.getChannels().push_back(&channel);
+	sendLine(*recipient, Relay::invite(Relay::prefix(cl.getNick(), cl.getUsername()), target, channel.getName()));
+	sendReply(cl, Replies::inviting(cl.getNick(), channel.getName(), target));
 }
 
 //--------MODE--------
@@ -444,46 +498,16 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 	if (channel.isOperator(*recipient))
 		channel.removeOperator(*recipient);
 	channel.removeUser(*recipient);
-
-	// broadcast a tous les utilisateurs (+ avec le commentaire si msg.params.size() > 2)
-	// pour envoyer le message a tous les users du channel si commentaire
+	recipient->removeChannel(&channel);
+	std::string reason;
+	if (msg.params.size() > 2)
+		reason = msg.params.back();
+	else
+		reason = "";
+	broadcastToChannel(cl, Relay::kick(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), target, reason), &channel);
 }
 
 
-//--------INVITE--------
-// msg.command = INVITE
-// msg.params[0] = user 
-// msg.params[1] = channel checke par dispatch
-void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
-{
-	if (!channel.user_present(cl))
-	{
-		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName()));        
-		return ;
-	}
-	if (!channel.isOperator(cl))
-	{
-		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
-        return ;
-	}
-	if (msg.params.size() < 2)
-	{
-		sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
-		return;
-	}
-	const std::string& target = msg.params[0];
-	client* recipient = getUser(cl, target);
-	if (recipient == NULL)
-		return;
-	if (channel.user_present(*recipient))
-	{
-		sendReply(cl, Replies::userOnChannel(cl.getNick(), target, channel.getName()));
-		return;
-	}
-	channel.add_user(*recipient);
-	sendLine(*recipient, Relay::invite(Relay::prefix(cl.getNick(), cl.getUsername()), target, channel.getName()));
-	sendReply(cl, Replies::inviting(cl.getNick(), channel.getName(), target));
-}
 
 //--------TOPIC--------
 // msg.command = TOPIC
@@ -522,8 +546,7 @@ void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 		else
 			topic = msg.params[1];
 		channel.setTopic(topic);
-		// TO DO -----
-		// broadcast(Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()));
+		broadcastToChannel(cl, Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()), &channel);
 	}
 }
 

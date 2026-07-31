@@ -18,6 +18,7 @@ class Commands
 		void		sendLine(client& cl, const std::string& line);
 		void		sendReply(client& cl, const std::string& reply);
 		void 		broadcast(client& cl, Message& msg, Channel* channel);
+		void		broadcastToChannel(client& cl, std::string msg, Channel* channel);
 		void		checkRegistration(client& cl);
 		Channel*	getChannel(client& cl, const std::string& rawName);
 		client*		getUser(client& cl, const std::string& nick);

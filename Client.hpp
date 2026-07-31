@@ -2,18 +2,23 @@
 #define CLIENT_HPP
 
 #include <string>
+#include <vector>
+#include <algorithm>
+
+class Channel;
 
 class	client
 {
 	private:
-		std::string			_nick;
-		std::string			_username;
-		std::string			_realName;
-		bool				_paswdCorrect;
-		int					_socketFd;
-		std::string			_inputBuf;
-		bool				_registered;
-		bool				_shouldDisconnect;
+		std::string				_nick;
+		std::string				_username;
+		std::string				_realName;
+		bool					_paswdCorrect;
+		int						_socketFd;
+		std::string				_inputBuf;
+		bool					_registered;
+		bool					_shouldDisconnect;
+		std::vector<Channel*> 	_channelList;
 
 	public:
 		client();
@@ -27,12 +32,15 @@ class	client
 		bool	isPaswdCorrect()const;
 		bool	isRegistered() const;
 		bool	shouldDisconnect() const;
+		void 	removeChannel(Channel* chan);
+
 		//GETTER
 		int					getSocketFd()const;
 		const std::string& 	getNick() const;
 		const std::string& 	getUsername() const;
 		const std::string& 	getRealName() const;
 		std::string& 		getInputBuf();
+		std::vector<Channel *> getChannels() const;
 		//SETTER
 		void	setNick(std::string newNick);
 		void	setUsername(std::string newUsername);

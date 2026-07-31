@@ -70,6 +70,13 @@ bool	client::shouldDisconnect() const {
 	return(this->_shouldDisconnect);
 }
 
+void 	client::removeChannel(Channel* chan)
+{
+    std::vector<Channel*>::iterator it = std::find(_channelList.begin(), _channelList.end(), chan);
+    if (it != _channelList.end())
+        _channelList.erase(it);
+}
+
 //GETTER----------------------------------------
 
 int		client::getSocketFd()const
@@ -90,6 +97,11 @@ const std::string& client::getUsername() const {
 }
 const std::string& client::getRealName() const {
 	return _realName;
+}
+
+std::vector<Channel *> client::getChannels() const
+{
+    return _channelList;
 }
 
 
