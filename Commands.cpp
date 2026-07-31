@@ -416,13 +416,8 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 		channel.removeOperator(*recipient);
 	channel.removeUser(*recipient);
 
+	// broadcast a tous les utilisateurs (+ avec le commentaire si msg.params.size() > 2)
 	// pour envoyer le message a tous les users du channel si commentaire
-	if (msg.params.size() > 2) {
-		std::string comment;
-		for (size_t i = 2; i < msg.params.size(); i++) {
-			comment = comment + " " + msg.params[i];
-		}
-	}
 }
 
 
@@ -466,13 +461,6 @@ void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
 // msg.params[0] = channel checke par dispatch
 // msg.params[1] = optionnel, changement de topic ou suppression 
 
-//   TOPIC #test :New topic          ; Setting the topic on "#test" to "New topic".
-
-//   TOPIC #test :                   ; Clearing the topic on "#test"
-
-//   TOPIC #test                     ; Checking the topic for "#test"
-
-
 void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 {
 	if (!channel.user_present(cl))
@@ -499,15 +487,12 @@ void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 			sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
 			return ;
 		}
+		std::string topic;
 		if (msg.params[1][0] == ':' && msg.params[1].size() == 1)
-		{
-			std::string topicErase = "";
-			channel.setTopic(topicErase);
-		}
+			topic = "";
 		else
-		{
-			channel.setTopic(msg.params[1]);
-		}
+			topic = msg.params[1];
+		channel.setTopic(topic);
 		// TO DO -----
 		//broadcast(Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()));
 	}
