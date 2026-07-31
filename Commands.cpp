@@ -156,8 +156,8 @@ void Commands::cmdPrivmsg(client& cl, Message msg) {
 		if(_serv->channel_exist(name_chan))
     	{
 			// std::map<std::string, Channel> tmp = serv.getChannelList();
-			std::map<std::string, Channel>::iterator it = _serv->getChannelList().find(name_chan);
-			it->second.broadcast(cl, msg);
+			std::map<std::string, Channel*>::iterator it = _serv->getChannelList().find(name_chan);
+			it->second->broadcast(cl, msg);
 			return;
 		}
 		else
@@ -200,21 +200,26 @@ void Commands::cmdJOIN(client& cl, Message msg)
         sendReply(cl, "476 ERR_BADCHANMASK");
         return ;
     }
-    std::map<std::string, Channel>& channelList = _serv->getChannelList();
-    std::map<std::string, Channel>::iterator it;
+    std::map<std::string, Channel*>& channelList = _serv->getChannelList();
+    std::map<std::string, Channel*>::iterator it;
 	std::string name = msg.params[0].substr(1);
     it = channelList.find(name);
     if(it != channelList.end())
     {
-        it->second.add_user(cl);
+		if(it->second->user_present(cl) == true)
+		{
+        	sendReply(cl, "443  ERR_USERONCHANNEL");
+        	return ;
+    	}
+        it->second->add_user(cl);
     }
     else
     {
 		std::cout << "salut la team\n";
-        Channel channel(name);
-        channel.add_user(cl);
-        channel.add_operator(cl);
-        channelList[name] = Channel(name);
+        Channel *channel = new Channel(name);
+        channel->add_user(cl);
+        channel->add_operator(cl);
+        channelList[name] = channel;
     }
 }
 

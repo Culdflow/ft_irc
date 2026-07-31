@@ -149,13 +149,13 @@ client* serv::findClientByNick(const std::string& nick)
 
 bool	serv::channel_exist(std::string& name_ch)
 {
-	std::map<std::string, Channel>::iterator it = _channelList.find(name_ch);
+	std::map<std::string, Channel*>::iterator it = _channelList.find(name_ch);
 	if(it == _channelList.end())
 		return false;
 	return true;
 }
 
-std::map<std::string, Channel>& serv::getChannelList()
+std::map<std::string, Channel*>& serv::getChannelList()
 {
 	return _channelList;
 }

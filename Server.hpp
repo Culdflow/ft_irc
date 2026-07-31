@@ -28,7 +28,7 @@ class serv
 		int						_socketFd;
 		std::vector<pollfd>		_pollFds;
 		std::vector<client*>	_clientList;
-		std::map<std::string, Channel> 	_channelList;
+		std::map<std::string, Channel*> 	_channelList;
 		Commands				_commands;
 
 		//PRIVATE METHODS
@@ -57,7 +57,7 @@ class serv
 		unsigned int 	getPort()const;
 		std::string		getPassword()const;
 		int				getSocketFd()const;
-		std::map<std::string, Channel>& getChannelList();
+		std::map<std::string, Channel*>& getChannelList();
 };
 
 std::vector<std::string> split(const std::string& s, char delimiter);

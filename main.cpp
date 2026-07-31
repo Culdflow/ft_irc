@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
+/*   By: jpecquer <jpecquer@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:27:59 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/27 16:22:12 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/07/31 13:41:15 by jpecquer         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,8 +20,6 @@ int main(int ac, char **av) {
         std::string password = av[2];
         serv	server(port, password);
         server.run();
-        std::map<std::string, Channel>::iterator it = server.getChannelList().find("42");
-        it->second.
     }
     catch (std::exception& e) {
         std::cerr << e.what() << "\n";
