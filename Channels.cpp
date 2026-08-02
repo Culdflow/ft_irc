@@ -47,7 +47,10 @@ void Channel::removeOperator(client &cl)
 	for (it = _operators.begin(); it != _operators.end(); it++)
 	{
 		if (*it == &cl)
+		{
 			_operators.erase(it);
+			return;
+		}
 	}
 }
 
@@ -57,7 +60,10 @@ void Channel::removeUser(client &cl)
 	for (it = _users.begin(); it != _users.end(); it++)
 	{
 		if (*it == &cl)
+		{
 			_users.erase(it);
+			return;
+		}
 	}
 }
 

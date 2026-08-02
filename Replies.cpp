@@ -169,7 +169,9 @@ std::string Relay::topicChange(const std::string& clientPrefix, const std::strin
 
 std::string Relay::kick(const std::string& clientPrefix, const std::string& channel, const std::string& target, const std::string& reason)
 {
-	return ":" + clientPrefix + " KICK " + channel + " " + target + " :" + reason;
+	if (!reason.empty())
+		return ":" + clientPrefix + " KICK " + channel + " " + target + " :" + reason;
+	return ":" + clientPrefix + " KICK " + channel + " " + target;		
 }
 
 std::string Relay::mode(const std::string& clientPrefix, const std::string& channel, const std::string& modeStr, const std::string& modeArg)

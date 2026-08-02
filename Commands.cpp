@@ -89,14 +89,12 @@ void Commands::broadcast(client& cl, Message& msg, Channel* channel)
     }
 }
 
-void Commands::broadcastToChannel(client &cl, std::string msg, Channel *channel)
+void Commands::broadcastToChannel(std::string msg, Channel *channel)
 {
+	msg += "\r\n";
 	std::vector<client*> users = channel->getUserList();
 	for(std::vector<client*>::iterator it = users.begin(); it < users.end(); it++)
 	{
-		if(*it == &cl)
-			continue ;
-
 		send((*it)->getSocketFd(), msg.c_str(), msg.size(), 0);
 	}
 }
@@ -243,7 +241,7 @@ void Commands::cmdQUIT(client& cl, Message msg) {
 	std::vector<Channel*>::iterator it;
 	for (it = channelList.begin(); it != channelList.end(); it++) {
 		cl.removeChannel(*it);
-		broadcastToChannel(cl, Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
+		broadcastToChannel(Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
 	}
 }
 
@@ -293,7 +291,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
     	}
         it->second->add_user(cl);
 		cl.getChannels().push_back(it->second);
-		broadcastToChannel(cl, Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name), it->second);
+		broadcastToChannel(Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name), it->second);
 	}
     else
     {
@@ -375,13 +373,10 @@ void 	Commands::cmdMODE(client& cl, Message msg, Channel& channel) {
 	else if (c == 'l')
 		cmdLMODE(cl, msg, channel);
 	
-	//TO DO -----
-	//broadcast au channel le mode utilisé
-	// if (msg.params.size() > 2)
-	// 	broadcast(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]));
-	// else
-	// 	broadcast(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""));
-
+	if (msg.params.size() > 2)
+		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]), &channel);
+	else
+		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 }
 
 void 	Commands::cmdIMODE(client&cl, Message msg, Channel &channel) {
@@ -465,10 +460,6 @@ void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
 
 
 //--------KICK--------
-// msg.command = KICK
-// msg.params[0] = channel checke par dispatch
-// msg.params[1] = user
-// msg.params[2] = :reason
 void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 {
 	if (!channel.user_present(cl))
@@ -504,7 +495,9 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 		reason = msg.params.back();
 	else
 		reason = "";
-	broadcastToChannel(cl, Relay::kick(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), target, reason), &channel);
+	std::string kickLine = Relay::kick(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), target, reason);
+	sendLine(*recipient, kickLine);
+	broadcastToChannel(kickLine, &channel);
 }
 
 
@@ -540,13 +533,9 @@ void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 			sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
 			return ;
 		}
-		std::string topic;
-		if (msg.params[1][0] == ':' && msg.params[1].size() == 1)
-			topic = "";
-		else
-			topic = msg.params[1];
+		std::string topic = msg.params.back();
 		channel.setTopic(topic);
-		broadcastToChannel(cl, Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()), &channel);
+		broadcastToChannel(Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()), &channel);
 	}
 }
 
