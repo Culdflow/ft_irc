@@ -236,13 +236,13 @@ void Commands::cmdQUIT(client& cl, Message msg) {
 		reason = "";
 	else
 		reason = msg.params[0];
-	cl.setShouldDisconnect(true);
 	std::vector<Channel*> channelList = cl.getChannels();
 	std::vector<Channel*>::iterator it;
 	for (it = channelList.begin(); it != channelList.end(); it++) {
 		cl.removeChannel(*it);
 		broadcastToChannel(Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
 	}
+	cl.setShouldDisconnect(true);
 }
 
 //--------JOIN--------
@@ -285,10 +285,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
         	return ;
 		}
 		if(it->second->user_present(cl) == true)
-		{
-        	sendReply(cl, Replies::notOnChannel(cl.getNick(), name));
         	return ;
-    	}
         it->second->add_user(cl);
 		cl.getChannels().push_back(it->second);
 		broadcastToChannel(Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name), it->second);
@@ -460,6 +457,7 @@ void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
 
 
 //--------KICK--------
+
 void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 {
 	if (!channel.user_present(cl))
@@ -503,15 +501,17 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 
 
 //--------TOPIC--------
-// msg.command = TOPIC
-// msg.params[0] = channel checke par dispatch
-// msg.params[1] = optionnel, changement de topic ou suppression 
 
 void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 {
 	if (!channel.user_present(cl))
 	{
 		sendReply(cl, Replies::notOnChannel(cl.getNick(), channel.getName())); 
+		return ;
+	}
+	if (channel.isTopicRestricted() == true && !channel.isOperator(cl)) 
+	{
+		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
 		return ;
 	}
 	if (msg.params.size() == 1)
@@ -528,11 +528,6 @@ void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 	}
 	else
 	{
-		if (channel.isTopicRestricted() == true && !channel.isOperator(cl)) 
-		{
-			sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
-			return ;
-		}
 		std::string topic = msg.params.back();
 		channel.setTopic(topic);
 		broadcastToChannel(Relay::topicChange(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), channel.getTopic()), &channel);
@@ -571,7 +566,11 @@ void Commands::dispatch(client& cl, Message msg)
 	}
 	else if (cmd_exist(msg.command) == true)
 	{
-		if (msg.command == "PRIVMSG")
+		if (msg.command == "NICK")
+			cmdNICK(cl, msg);
+		else if (msg.command == "USER" || msg.command == "PASS")
+			sendReply(cl, Replies::alreadyRegistered(selfNick(cl)));
+		else if (msg.command == "PRIVMSG")
 			cmdPRIVMSG(cl, msg);
 		else if (msg.command == "JOIN")
 			cmdJOIN(cl, msg);
@@ -579,7 +578,7 @@ void Commands::dispatch(client& cl, Message msg)
 		{
 			if (msg.params.empty())
 			{
-				sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
+				sendReply(cl,  Replies::needMoreParams(cl.getNick(), msg.command));
 				return;
 			}
 			size_t channelIndex;
@@ -589,7 +588,7 @@ void Commands::dispatch(client& cl, Message msg)
 				channelIndex = 0;
 			if (msg.params.size() <= channelIndex)
 			{
-				sendReply(cl,  Replies::needMoreParams(cl.getNick(), "INVITE"));
+				sendReply(cl,  Replies::needMoreParams(cl.getNick(),  msg.command));
 				return;
 			}
 			Channel* channel = getChannel(cl, msg.params[channelIndex]);
