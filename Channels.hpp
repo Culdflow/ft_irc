@@ -19,6 +19,7 @@ class Channel
 		bool			_inviteOnly;
 		bool			_topicRestricted;
 		unsigned int 	_userLimit;
+		bool			_isLimited;
 		
 		std::vector<client*>    _users;
 		std::vector<client*>    _operators;
@@ -43,6 +44,7 @@ class Channel
 		void                setTopicRestricted(bool value);
 		void                setChannelKey(std::string& key);
 		void                setUserLimit(unsigned int u);
+		void				setIsLimited(bool value);
 		void                setTopic(std::string& topic);
 		bool                user_present(client& cl);
 		bool                isOperator(client& cl);
@@ -51,6 +53,7 @@ class Channel
 		bool                isInviteOnly() const;
 		std::string         getName() const;
 		bool                isTopicRestricted() const;
+		bool				isLimited() const;
 		std::string         getChannelKey() const;
 		unsigned int        getUserLimit() const;
 		std::string         getTopic() const;

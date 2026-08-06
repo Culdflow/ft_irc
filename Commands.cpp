@@ -348,7 +348,21 @@ void 	Commands::cmdMODE(client& cl, Message msg, Channel& channel) {
 		sendReply(cl, Replies::chanOpPrivsNeeded(cl.getNick(), channel.getName()));
         return ;
 	}
-	if (msg.params.size () < 2  || msg.params[1].size() < 2)
+	if (msg.params.size() == 1)
+	{
+		std::string mode = "+";
+		if (channel.isInviteOnly())
+			mode += "i";
+		if (channel.isTopicRestricted())
+			mode += "t";
+		if (!channel.getChannelKey().empty())
+			mode += "k";
+		if (channel.isLimited())
+			mode += "l";
+		sendReply(cl,  Replies::channelModeIs(cl.getNick(), channel.getName(), mode));
+		return ;
+	}
+	if (msg.params[1].size() < 2)
 	{
 		sendReply(cl,  Replies::needMoreParams(cl.getNick(), "MODE"));
 		return ;
@@ -449,10 +463,16 @@ void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
         	return ;
     	}
 		else
+		{
 			channel.setUserLimit(limit);
+			channel.setIsLimited(true);
+		}
 	}
 	if (msg.params[1][0] == '-')
+	{
 		channel.setUserLimit(INT_MAX);
+		channel.setIsLimited(false);
+	}
 }
 
 

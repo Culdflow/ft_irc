@@ -39,9 +39,7 @@ ERREURS LIEES AUX CANAUX
 
 ERREURS DE PERMISSIONS
 ----------------------------------------
-481  ERR_NOPRIVILEGES        Pas de privileges d'operateur
 482  ERR_CHANOPRIVSNEEDED    Besoin d'etre operateur sur le canal
-483  ERR_CANTKILLSERVER      Impossible de tuer un serveur
 
 REPONSES DE SUCCES (ENREGISTREMENT)
 ----------------------------------------
@@ -51,8 +49,3 @@ REPONSES DE SUCCES (ENREGISTREMENT)
 004  RPL_MYINFO              Nom du serveur, version, modes disponibles
 005  RPL_ISUPPORT            Fonctionnalites supportees par le serveur
 
-CODES LES PLUS UTILISES POUR FT_IRC
-----------------------------------------
-401, 403, 404, 421, 431, 432, 433,
-441, 442, 443, 461, 462, 464,
-471, 472, 473, 474, 475, 476, 482

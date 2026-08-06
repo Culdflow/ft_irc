@@ -142,6 +142,10 @@ std::string Replies::chanOpPrivsNeeded(const std::string& nick, const std::strin
 {
 	return field("482", nick, channel + " :You're not channel operator");
 }
+std::string Replies::channelModeIs(const std::string &nick, const std::string &channel, const std::string &mode)
+{
+    return field("324", nick, channel + " :Channel mode is " + mode);
+}
 
 std::string Relay::prefix(const std::string& nick, const std::string& user)
 {

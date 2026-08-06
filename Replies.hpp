@@ -41,6 +41,7 @@ class Replies
 		static std::string inviteOnlyChan(const std::string& nick, const std::string& channel);
 		static std::string badChanMask(const std::string& nick, const std::string& channel);
 		static std::string chanOpPrivsNeeded(const std::string& nick, const std::string& channel);
+		static std::string channelModeIs(const std::string& nick, const std::string& channel, const std::string &mode);
 
 	private:
 		Replies();

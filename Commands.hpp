@@ -46,6 +46,8 @@ class Commands
 		void 	cmdKICK(client& cl, Message msg, Channel& channel);
 		void 	cmdINVITE(client& cl, Message msg, Channel& channel);
 		void 	cmdTOPIC(client& cl, Message msg, Channel& channel);
+		void	cmdPING(client& cl, Message msg, Channel& channel);
+		void	cmdPONG(client& cl, Message msg, Channel& channel);
 };
 
 #endif

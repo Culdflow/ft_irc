@@ -1,15 +1,15 @@
 #include "Channels.hpp"
 
-Channel::Channel() : _name(""), _inviteOnly(false), _topicRestricted(false), _userLimit(INT_MAX)
+Channel::Channel() : _name(""), _inviteOnly(false), _topicRestricted(false), _userLimit(INT_MAX), _isLimited(false)
 {
 }
 
-Channel::Channel(const std::string &name) : _name(name),  _inviteOnly(false), _topicRestricted(false), _userLimit(INT_MAX)
+Channel::Channel(const std::string &name) : _name(name),  _inviteOnly(false), _topicRestricted(false), _userLimit(INT_MAX), _isLimited(false)
 {
 }
 
 Channel::Channel(const Channel &src) : _name(src._name), _channelKey(src._channelKey),
-	_topic(src._topic), _inviteOnly(src._inviteOnly), _topicRestricted(src._topicRestricted), _userLimit(src._userLimit),
+	_topic(src._topic), _inviteOnly(src._inviteOnly), _topicRestricted(src._topicRestricted), _userLimit(src._userLimit), _isLimited(src._isLimited),
 	_users(src._users), _operators(src._operators)
 {
 }
@@ -24,6 +24,7 @@ Channel &Channel::operator=(const Channel &src)
 	_userLimit = src._userLimit;
 	_users = src._users;
 	_operators = src._operators;
+	_isLimited = src._isLimited;
 	return (*this);
 }
 
@@ -93,6 +94,11 @@ void Channel::setTopic(std::string &topic)
     _topic = topic;
 }
 
+void Channel::setIsLimited(bool value)
+{
+	_isLimited = value;
+}
+
 bool Channel::isInviteOnly() const
 {
 	return _inviteOnly;
@@ -106,6 +112,11 @@ std::string Channel::getName() const
 bool Channel::isTopicRestricted() const
 {
 	return _topicRestricted;
+}
+
+bool Channel::isLimited() const
+{
+    return _isLimited;
 }
 
 std::string Channel::getChannelKey() const
