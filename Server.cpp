@@ -204,7 +204,7 @@ void	serv::run()
 					int n = read(STDIN_FILENO, buf, sizeof(buf) - 1);
 					if (n <= 0)
 					{
-						running = false;
+						removePollFd(STDIN_FILENO);
 						break;
 					}
 					buf[n] = '\0';
