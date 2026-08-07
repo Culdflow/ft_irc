@@ -1,6 +1,15 @@
 #include "Server.hpp"
+#include <csignal>
 
 //HELPER-----------------------------------------------------------
+
+static volatile sig_atomic_t g_running = 1;
+
+static void handleSignal(int sig)
+{
+	(void)sig;
+	g_running = 0;
+}
 
 std::vector<std::string> split(const std::string& s, char delimiter) {
 	std::vector<std::string> tokens;
@@ -57,6 +66,9 @@ serv&	serv::operator=(const serv& src)
 
 void serv::createSocket()
 {
+	signal(SIGINT, handleSignal);
+	signal(SIGTERM, handleSignal);
+
 	this->_socketFd = socket(AF_INET, SOCK_STREAM, 0);
 	this->_socket.sin_family = AF_INET;
 	this->_socket.sin_port = htons(this->_port);
@@ -69,6 +81,12 @@ void serv::createSocket()
 	listenPfd.events = POLLIN;
 	listenPfd.revents = 0;
 	_pollFds.push_back(listenPfd);
+
+	pollfd stdinPfd;
+	stdinPfd.fd = STDIN_FILENO;
+	stdinPfd.events = POLLIN;
+	stdinPfd.revents = 0;
+	_pollFds.push_back(stdinPfd);
 }
 
 void serv::acceptNewClient() {
@@ -99,6 +117,7 @@ void serv::handleClient(int fd) {
 			bool closed = false;
 			std::vector<Message> msgs = socketBufferParsing(**c, closed);
 			if (closed) {
+				_commands.removeClientFromChannels(**c, "Connection closed");
 				close(fd);
 				removePollFd(fd);
 				delete *c;
@@ -162,7 +181,8 @@ std::map<std::string, Channel*>& serv::getChannelList()
 
 void	serv::run()
 {
-	while (true)
+	bool running = true;
+	while (running && g_running)
 	{
 		int ret = poll(&_pollFds[0], _pollFds.size(), -1);
 		if (ret < 0)
@@ -170,7 +190,7 @@ void	serv::run()
 			if (errno == EINTR)
 				continue;
 			std::cerr << "errrrorrrrr poll" << std::endl;
-			exit(EXIT_FAILURE); //gerer les deconnexions etc
+			return; //gerer les deconnexions etc
 		}
 		for (size_t i = 0; i < _pollFds.size(); i++)
 		{
@@ -178,6 +198,25 @@ void	serv::run()
 			{
 				if (_pollFds[i].fd == _socketFd)
 					acceptNewClient();
+				else if (_pollFds[i].fd == STDIN_FILENO)
+				{
+					char buf[512];
+					int n = read(STDIN_FILENO, buf, sizeof(buf) - 1);
+					if (n <= 0)
+					{
+						running = false;
+						break;
+					}
+					buf[n] = '\0';
+					std::string line(buf);
+					while (!line.empty() && (line[line.size() - 1] == '\n' || line[line.size() - 1] == '\r'))
+						line.erase(line.size() - 1);
+					if (line == "quit")
+					{
+						running = false;
+						break;
+					}
+				}
 				else
 					handleClient(_pollFds[i].fd);
 			}
@@ -218,6 +257,8 @@ serv::~serv()
 		close(_clientList[i]->getSocketFd());
         delete _clientList[i];
 	}
+	for (std::map<std::string, Channel*>::iterator it = _channelList.begin(); it != _channelList.end(); it++)
+		delete it->second;
 	close(_socketFd);
 	std::cout << "serv destructor called" << std::endl;
 }

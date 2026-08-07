@@ -3,16 +3,14 @@
 
 # include <string>
 
-/*
-** Chaque methode retourne UNIQUEMENT "<code> <params...> :<trailing>",
-** Classe utilitaire : uniquement des methodes statiques, jamais
-** instanciee. Constructeur prive pour empecher l'instanciation.
-*/
-
 class Replies
 {
 	public:
 		static std::string welcome(const std::string& nick);
+		static std::string yourHost(const std::string& nick);
+		static std::string created(const std::string& nick);
+		static std::string myInfo(const std::string& nick);
+		static std::string isSupport(const std::string& nick);
 
 		static std::string notopic(const std::string& nick, const std::string& channel);
 		static std::string topic(const std::string& nick, const std::string& channel, const std::string& topicText);
@@ -21,7 +19,6 @@ class Replies
 
 		static std::string noSuchNick(const std::string& nick, const std::string& target);
 		static std::string noSuchChannel(const std::string& nick, const std::string& channel);
-		static std::string cannotSendToChan(const std::string& nick, const std::string& channel);
 		static std::string noRecipient(const std::string& nick, const std::string& command);
 		static std::string noTextToSend(const std::string& nick);
 		static std::string unknownCommand(const std::string& nick, const std::string& command);

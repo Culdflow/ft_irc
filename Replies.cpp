@@ -43,10 +43,7 @@ std::string Replies::noSuchChannel(const std::string& nick, const std::string& c
 	return field("403", nick, channel + " :No such channel");
 }
 
-std::string Replies::cannotSendToChan(const std::string& nick, const std::string& channel)
-{
-	return field("404", nick, channel + " :Cannot send to channel");
-}
+
 
 std::string Replies::noRecipient(const std::string& nick, const std::string& command)
 {
