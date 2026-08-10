@@ -33,6 +33,7 @@ class	client
 		bool	isRegistered() const;
 		bool	shouldDisconnect() const;
 		void 	removeChannel(Channel* chan);
+		void 	addChannel(Channel* chan);
 
 		//GETTER
 		int					getSocketFd()const;

@@ -77,6 +77,11 @@ void 	client::removeChannel(Channel* chan)
         _channelList.erase(it);
 }
 
+void 	client::addChannel(Channel* chan)
+{
+    _channelList.push_back(chan);
+}
+
 //GETTER----------------------------------------
 
 int		client::getSocketFd()const

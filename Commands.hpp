@@ -30,6 +30,7 @@ class Commands
 		~Commands();
 
 		void	dispatch(client& cl, Message msg);
+		void	removeClientFromChannels(client& cl, const std::string& reason);
 
 		void	cmdPASS(client& cl, Message msg);
 		void	cmdNICK(client& cl, Message msg);
@@ -46,9 +47,9 @@ class Commands
 		void 	cmdKICK(client& cl, Message msg, Channel& channel);
 		void 	cmdINVITE(client& cl, Message msg, Channel& channel);
 		void 	cmdTOPIC(client& cl, Message msg, Channel& channel);
-		void	cmdPING(client& cl, Message msg, Channel& channel);
-		void	cmdPONG(client& cl, Message msg, Channel& channel);
 		void	disconnectClient(client& cl, const std::string& reason);
+		void	cmdPING(client& cl, Message msg);
+		void	cmdPONG(client& cl, Message msg);
 };
 
 #endif

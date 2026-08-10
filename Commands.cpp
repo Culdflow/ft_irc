@@ -186,7 +186,21 @@ void Commands::cmdNICK(client& cl, Message msg) {
 		sendReply(cl, Replies::nicknameInUse(selfNick(cl), newNick));
 		return;
 	}
+	bool wasRegistered = cl.isRegistered();
+	std::string oldPrefix = Relay::prefix(cl.getNick(), cl.getUsername());
 	cl.setNick(newNick);
+	if (wasRegistered)
+	{
+		std::string nickLine = Relay::nickChange(oldPrefix, newNick);
+		std::vector<Channel*> channels = cl.getChannels();
+		if (channels.empty())
+			sendLine(cl, nickLine);
+		else
+		{
+			for (std::vector<Channel*>::iterator it = channels.begin(); it != channels.end(); it++)
+				broadcastToChannel(nickLine, *it);
+		}
+	}
 	checkRegistration(cl);
 }
 
@@ -224,17 +238,8 @@ void Commands::cmdPRIVMSG(client& cl, Message msg) {
 		Channel* channel = getChannel(cl, msg.params[0]);
 		if (channel == NULL)
 			return;
-		std::string name_chan = msg.params[0];
-		if(_serv->channel_exist(name_chan))
-    	{
-			broadcast(cl, msg, channel);
-			return;
-		}
-		else
-		{
-        	sendReply(cl, Replies::noSuchChannel(cl.getNick(), channel->getName()));
-			return;
-		}
+		broadcast(cl, msg, channel);
+		return;
     }
 	const std::string& target = msg.params[0];
 	client* recipient = getUser(cl, target);
@@ -245,6 +250,42 @@ void Commands::cmdPRIVMSG(client& cl, Message msg) {
 
 //--------QUIT--------
 
+void Commands::removeClientFromChannels(client& cl, const std::string& reason)
+{
+	std::vector<Channel*> channelList = cl.getChannels();
+	std::vector<Channel*>::iterator it;
+	for (it = channelList.begin(); it != channelList.end(); it++) {
+		if ((*it)->isOperator(cl))
+			(*it)->removeOperator(cl);
+		(*it)->removeUser(cl);
+		cl.removeChannel(*it);
+		broadcastToChannel(Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
+		if ((*it)->getNumberOfUsers() == 0)
+		{
+			_serv->getChannelList().erase((*it)->getName());
+			delete *it;
+		}
+	}
+}
+
+//--------PING / PONG--------
+
+void Commands::cmdPING(client& cl, Message msg)
+{
+	std::string token;
+	if (msg.params.empty())
+		token = "";
+	else
+		token = msg.params.back();
+	sendLine(cl, ":ircserv PONG ircserv :" + token);
+}
+
+void Commands::cmdPONG(client& cl, Message msg)
+{
+	(void)cl;
+	(void)msg;
+}
+
 void Commands::cmdQUIT(client& cl, Message msg) {
 	std::string reason;
 	if (msg.params.empty())
@@ -252,6 +293,7 @@ void Commands::cmdQUIT(client& cl, Message msg) {
 	else
 		reason = msg.params[0];
 	disconnectClient(cl, reason);
+	removeClientFromChannels(cl, reason);
 	cl.setShouldDisconnect(true);
 }
 
@@ -297,7 +339,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
 		if(it->second->user_present(cl) == true)
         	return ;
         it->second->add_user(cl);
-		cl.getChannels().push_back(it->second);
+		cl.addChannel(it->second);
 		broadcastToChannel(Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name), it->second);
 	}
     else
@@ -306,7 +348,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
         channel->add_user(cl);
         channel->add_operator(cl);
         channelList[name] = channel;
-		cl.getChannels().push_back(channel);
+		cl.addChannel(channel);
 		sendLine(cl, Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name));
     }
 }
@@ -340,7 +382,7 @@ void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
 		return;
 	}
 	channel.add_user(*recipient);
-	cl.getChannels().push_back(&channel);
+	recipient->addChannel(&channel);
 	sendLine(*recipient, Relay::invite(Relay::prefix(cl.getNick(), cl.getUsername()), target, channel.getName()));
 	sendReply(cl, Replies::inviting(cl.getNick(), channel.getName(), target));
 }
@@ -581,6 +623,16 @@ void Commands::dispatch(client& cl, Message msg)
 	if (msg.command == "QUIT")
 	{
 		cmdQUIT(cl, msg);
+		return;
+	}
+	if (msg.command == "PING")
+	{
+		cmdPING(cl, msg);
+		return;
+	}
+	if (msg.command == "PONG")
+	{
+		cmdPONG(cl, msg);
 		return;
 	}
 	if (!cl.isUsernameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
