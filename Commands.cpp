@@ -78,7 +78,7 @@ void Commands::broadcast(client& cl, Message& msg, Channel* channel)
             if(*it == &cl)
                 continue ;
 
-            std::string message = Relay::privmsg(Relay::prefix(cl.getNick(), cl.getUsername()), (*it)->getNick(), msg.params.back());
+            std::string message = Relay::privmsg(Relay::prefix(cl.getNick(), cl.getUsername()), (*it)->getNick(), msg.params.back()) + "\r\n";
             send((*it)->getSocketFd(), message.c_str(), message.size(), 0);
         }
     }
@@ -99,6 +99,21 @@ void Commands::broadcastToChannel(std::string msg, Channel *channel)
 	}
 }
 
+// SERV HELPERS -------------------------------
+
+void Commands::disconnectClient(client &cl, const std::string &reason)
+{
+	std::vector<Channel*> channelList = cl.getChannels();
+	std::vector<Channel*>::iterator it;
+	for (it = channelList.begin(); it != channelList.end(); it++)
+	{
+		broadcastToChannel(Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
+		(*it)->removeUser(cl);
+		if ((*it)->isOperator(cl))
+			(*it)->removeOperator(cl);
+		cl.removeChannel(*it);
+	}
+}
 
 Channel* Commands::getChannel(client& cl, const std::string& rawName)
 {
@@ -233,15 +248,10 @@ void Commands::cmdPRIVMSG(client& cl, Message msg) {
 void Commands::cmdQUIT(client& cl, Message msg) {
 	std::string reason;
 	if (msg.params.empty())
-		reason = "";
+		reason = "Client Quit";
 	else
 		reason = msg.params[0];
-	std::vector<Channel*> channelList = cl.getChannels();
-	std::vector<Channel*>::iterator it;
-	for (it = channelList.begin(); it != channelList.end(); it++) {
-		cl.removeChannel(*it);
-		broadcastToChannel(Relay::quit(Relay::prefix(cl.getNick(), cl.getUsername()), reason), *it);
-	}
+	disconnectClient(cl, reason);
 	cl.setShouldDisconnect(true);
 }
 
@@ -498,7 +508,10 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 	const std::string& target = msg.params[1];
 	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
+	{
+		sendReply(cl, Replies::noSuchNick(cl.getNick(), target));
 		return;
+	}
 	if (!channel.user_present(*recipient))
 	{
 		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));

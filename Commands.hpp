@@ -48,6 +48,7 @@ class Commands
 		void 	cmdTOPIC(client& cl, Message msg, Channel& channel);
 		void	cmdPING(client& cl, Message msg, Channel& channel);
 		void	cmdPONG(client& cl, Message msg, Channel& channel);
+		void	disconnectClient(client& cl, const std::string& reason);
 };
 
 #endif

@@ -99,6 +99,7 @@ void serv::handleClient(int fd) {
 			bool closed = false;
 			std::vector<Message> msgs = socketBufferParsing(**c, closed);
 			if (closed) {
+				this->_commands.disconnectClient(**c, "Connection closed");
 				close(fd);
 				removePollFd(fd);
 				delete *c;
@@ -170,7 +171,7 @@ void	serv::run()
 			if (errno == EINTR)
 				continue;
 			std::cerr << "errrrorrrrr poll" << std::endl;
-			exit(EXIT_FAILURE); //gerer les deconnexions etc
+			return ; //gerer les deconnexions etc
 		}
 		for (size_t i = 0; i < _pollFds.size(); i++)
 		{
