@@ -23,6 +23,7 @@ class Channel
 		
 		std::vector<client*>    _users;
 		std::vector<client*>    _operators;
+		std::vector<client*>    _usersGuests;
 		
 	public:
 		//CONSTRUCTORS
@@ -36,8 +37,10 @@ class Channel
 		//METHODS
 		void                add_user(client& cl);
 		void                add_operator(client& cl);
+		void				add_guest(client& cl);
 		void                removeOperator(client& cl);
         void                removeUser(client& cl);
+		bool				is_invited(client& cl);
         
 		//SETTER
 		void                setInviteOnly(bool value);

@@ -7,6 +7,7 @@
 #include <cctype> 
 #include <climits>
 
+
 class serv;
 class Channel;
 
@@ -35,6 +36,7 @@ class Commands
 		void	cmdPASS(client& cl, Message msg);
 		void	cmdNICK(client& cl, Message msg);
 		void	cmdUSER(client& cl, Message msg);
+		void	mess_join(client &cl, Channel *cha);
 		void 	cmdJOIN(client& cl, Message msg);
 		void	cmdPRIVMSG(client& cl, Message msg);
 		void	cmdQUIT(client& cl, Message msg);
@@ -50,6 +52,7 @@ class Commands
 		void	disconnectClient(client& cl, const std::string& reason);
 		void	cmdPING(client& cl, Message msg);
 		void	cmdPONG(client& cl, Message msg);
+		void 	messBot(Channel* channel);
 };
 
 #endif

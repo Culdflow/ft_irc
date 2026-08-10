@@ -72,6 +72,18 @@ void Commands::checkRegistration(client& cl)
 	}
 }
 
+void Commands::messBot(Channel* channel)
+{
+	std::string lineBot = ":mybot!bot@localhost PRIVMSG ";
+    lineBot += channel->getName();
+    lineBot += " :feur :)\r\n";
+	std::vector<client*> users = channel->getUserList();
+	for(std::vector<client*>::iterator it = users.begin(); it < users.end(); it++)
+    {
+		send((*it)->getSocketFd(), lineBot.c_str(), lineBot.size(), 0);
+	}
+}
+
 void Commands::broadcast(client& cl, Message& msg, Channel* channel)
 {
     if(channel->user_present(cl) == true)
@@ -243,6 +255,10 @@ void Commands::cmdPRIVMSG(client& cl, Message msg) {
 		if (channel == NULL)
 			return;
 		broadcast(cl, msg, channel);
+		if(msg.params[1] == "quoi")
+		{
+			messBot(channel);
+		}
 		return;
     }
 	const std::string& target = msg.params[0];
@@ -305,6 +321,32 @@ void Commands::cmdPONG(client& cl, Message msg)
 
 //--------JOIN--------
 
+void Commands::mess_join(client &cl, Channel *cha)
+{
+	std::string line = (*cha).getTopic();
+	std::string topic = (*cha).getTopic();
+	if(topic.empty())
+		line = "331 " + cl.getRealName() + " " + (*cha).getName() + " :No topic is set";
+	else
+		line = "332 " + cl.getRealName() + " " + (*cha).getName() + " :" + topic;
+	sendReply(cl, line);
+	line = "353 " + cl.getRealName() + " = " + (*cha).getName() + " :";
+	std::vector<client*> userList = (*cha).getUserList();
+	for(std::vector<client*>::iterator it = userList.begin(); it < userList.end(); it++)
+	{
+		if((*cha).isOperator(**it))
+		{
+			line = line + "@";
+		}
+		line = line + (**it).getUsername() + " ";
+	}
+	line.erase(line.size() - 1);
+	sendReply(cl, line);
+	line = "366"  + cl.getRealName() + " " + (*cha).getName() + " :End of NAMES list";
+	sendReply(cl, line);
+}
+
+
 void Commands::cmdJOIN(client& cl, Message msg)
 {
     if(msg.params.size() < 1)
@@ -325,8 +367,11 @@ void Commands::cmdJOIN(client& cl, Message msg)
     {
 		if (it->second->isInviteOnly() == true) 
 		{
-			sendReply(cl, Replies::inviteOnlyChan(cl.getNick(), name));
-        	return ;
+			if(!it->second->is_invited(cl))
+			{
+				sendReply(cl, Replies::inviteOnlyChan(cl.getNick(), name));
+				return ;
+			}
 		}
 		if (!it->second->getChannelKey().empty())
 		{
@@ -347,6 +392,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
         it->second->add_user(cl);
 		cl.addChannel(it->second);
 		broadcastToChannel(Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name), it->second);
+		mess_join(cl, it->second);
 	}
     else
     {
@@ -356,6 +402,7 @@ void Commands::cmdJOIN(client& cl, Message msg)
         channelList[name] = channel;
 		cl.addChannel(channel);
 		sendLine(cl, Relay::join(Relay::prefix(cl.getNick(), cl.getUsername()), name));
+		mess_join(cl, channel);
     }
 }
 
@@ -387,8 +434,8 @@ void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
 		sendReply(cl, Replies::userOnChannel(cl.getNick(), target, channel.getName()));
 		return;
 	}
-	channel.add_user(*recipient);
-	recipient->addChannel(&channel);
+	channel.add_guest(*recipient);
+	// recipient->addChannel(&channel);
 	sendLine(*recipient, Relay::invite(Relay::prefix(cl.getNick(), cl.getUsername()), target, channel.getName()));
 	sendReply(cl, Replies::inviting(cl.getNick(), channel.getName(), target));
 }
@@ -604,7 +651,7 @@ void Commands::cmdTOPIC(client &cl, Message msg, Channel &channel)
 				return;
 			}
 		}
-		sendLine(cl, Replies::topic(cl.getNick(), channel.getName(), channel.getTopic()));
+		sendReply(cl, Replies::topic(cl.getNick(), channel.getName(), channel.getTopic()));
 		return;
 	}
 	else

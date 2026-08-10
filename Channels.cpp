@@ -42,6 +42,21 @@ void Channel::add_operator(client &cl)
 	_operators.push_back(&cl);
 }
 
+void	Channel::add_guest(client& cl)
+{
+	_usersGuests.push_back(&cl);
+}
+
+bool	Channel::is_invited(client& cl)
+{
+	for(std::vector<client*>::iterator it = _usersGuests.begin(); it < _usersGuests.end(); it++)
+	{
+		if(*it == &cl)
+			return true;
+	}
+	return false;
+}
+
 void Channel::removeOperator(client &cl)
 {
 	std::vector<client *>::iterator it;
