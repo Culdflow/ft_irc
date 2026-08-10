@@ -66,6 +66,7 @@ void Commands::checkRegistration(client& cl)
 		cl.setRegistered(true);
 		sendReply(cl, Replies::welcome(cl.getNick()));
 		sendReply(cl, Replies::yourHost(cl.getNick()));
+		sendReply(cl, Replies::created(cl. getNick(), _serv->getCreationDate()));
 		sendReply(cl, Replies::myInfo(cl.getNick()));
 		sendReply(cl, Replies::isSupport(cl.getNick()));
 	}

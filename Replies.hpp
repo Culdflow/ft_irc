@@ -8,7 +8,7 @@ class Replies
 	public:
 		static std::string welcome(const std::string& nick);
 		static std::string yourHost(const std::string& nick);
-		static std::string created(const std::string& nick);
+		static std::string created(const std::string& nick, const std::string& date);
 		static std::string myInfo(const std::string& nick);
 		static std::string isSupport(const std::string& nick);
 

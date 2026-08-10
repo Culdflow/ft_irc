@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <poll.h>
 #include <cerrno>
+#include <ctime>
 
 class Channel;
 
@@ -31,6 +32,7 @@ class serv
 		std::vector<client*>	_clientList;
 		std::map<std::string, Channel*> 	_channelList;
 		Commands				_commands;
+		std::string				_creationDate;
 
 		//PRIVATE METHODS
 		void 			createSocket();
@@ -59,6 +61,8 @@ class serv
 		std::string		getPassword()const;
 		int				getSocketFd()const;
 		std::map<std::string, Channel*>& getChannelList();
+		const std::string& 	getCreationDate() const;
+
 };
 
 std::vector<std::string> split(const std::string& s, char delimiter);

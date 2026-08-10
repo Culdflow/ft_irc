@@ -16,6 +16,11 @@ std::string Replies::yourHost(const std::string &nick)
     return field("002", nick, " :Your host is ircserv, running version 1.0");
 }
 
+std::string Replies::created(const std::string &nick, const std::string& date)
+{
+    return field("003", nick, " :This server was created " + date);
+}
+
 std::string Replies::myInfo(const std::string &nick)
 {
     return field("004", nick, " :ircserv version 1.0, o itkol");

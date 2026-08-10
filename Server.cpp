@@ -27,6 +27,12 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
 
 serv::serv(unsigned int port, const std::string& pass) : _port(port), _password(pass), _commands(this)
 {
+	std::time_t rawtime = std::time(0);
+    std::string date = std::ctime(&rawtime);
+    if (!date.empty() && date[date.size() - 1] == '\n')
+        date.erase(date.size() - 1);
+    _creationDate = date;
+
 	std::cout << "Serv Constructor Called" << std::endl;
 	std::cout << "port = " << this->_port << std::endl;
 	std::cout << "password = " << this->_password << std::endl;
@@ -35,6 +41,12 @@ serv::serv(unsigned int port, const std::string& pass) : _port(port), _password(
 
 serv::serv() : _commands(this)
 {
+	    std::time_t rawtime = std::time(0);
+    std::string date = std::ctime(&rawtime);
+    if (!date.empty() && date[date.size() - 1] == '\n')
+        date.erase(date.size() - 1);
+    _creationDate = date;
+
 	std::cout << "Serv Constructor Called" << std::endl;
 	this->_port = 6667;
 	std::cout << "port = " << this->_port << std::endl;
@@ -178,6 +190,11 @@ bool	serv::channel_exist(std::string& name_ch)
 std::map<std::string, Channel*>& serv::getChannelList()
 {
 	return _channelList;
+}
+
+const std::string& serv::getCreationDate() const
+{
+    return _creationDate;
 }
 
 void	serv::run()
