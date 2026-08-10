@@ -8,9 +8,23 @@ static std::string field(const std::string& code, const std::string& nick, const
 
 std::string Replies::welcome(const std::string& nick)
 {
-	return field("001", nick, ":Welcome to the IRC network");
+	return field("001", nick, " :Welcome to the IRC network");
 }
 
+std::string Replies::yourHost(const std::string &nick)
+{
+    return field("002", nick, " :Your host is ircserv, running version 1.0");
+}
+
+std::string Replies::myInfo(const std::string &nick)
+{
+    return field("004", nick, " :ircserv version 1.0, o itkol");
+}
+
+std::string Replies::isSupport(const std::string &nick)
+{
+    return field("005", nick, " :CHANTYPES=# CHANMODES=k,l,it :are supported by this server");
+}
 
 std::string Replies::notopic(const std::string& nick, const std::string& channel)
 {

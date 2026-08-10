@@ -65,6 +65,9 @@ void Commands::checkRegistration(client& cl)
 	{
 		cl.setRegistered(true);
 		sendReply(cl, Replies::welcome(cl.getNick()));
+		sendReply(cl, Replies::yourHost(cl.getNick()));
+		sendReply(cl, Replies::myInfo(cl.getNick()));
+		sendReply(cl, Replies::isSupport(cl.getNick()));
 	}
 }
 
@@ -73,12 +76,12 @@ void Commands::broadcast(client& cl, Message& msg, Channel* channel)
     if(channel->user_present(cl) == true)
     {
 		std::vector<client*> users = channel->getUserList();
+		std::string message = Relay::privmsg(Relay::prefix(cl.getNick(), cl.getUsername()), channel->getName(), msg.params.back()) + "\r\n";
         for(std::vector<client*>::iterator it = users.begin(); it < users.end(); it++)
         {
             if(*it == &cl)
                 continue ;
 
-            std::string message = Relay::privmsg(Relay::prefix(cl.getNick(), cl.getUsername()), (*it)->getNick(), msg.params.back()) + "\r\n";
             send((*it)->getSocketFd(), message.c_str(), message.size(), 0);
         }
     }
@@ -268,6 +271,18 @@ void Commands::removeClientFromChannels(client& cl, const std::string& reason)
 	}
 }
 
+void Commands::cmdQUIT(client& cl, Message msg) {
+	std::string reason;
+	if (msg.params.empty())
+		reason = "Client Quit";
+	else
+		reason = msg.params[0];
+	disconnectClient(cl, reason);
+	removeClientFromChannels(cl, reason);
+	cl.setShouldDisconnect(true);
+}
+
+
 //--------PING / PONG--------
 
 void Commands::cmdPING(client& cl, Message msg)
@@ -286,16 +301,6 @@ void Commands::cmdPONG(client& cl, Message msg)
 	(void)msg;
 }
 
-void Commands::cmdQUIT(client& cl, Message msg) {
-	std::string reason;
-	if (msg.params.empty())
-		reason = "Client Quit";
-	else
-		reason = msg.params[0];
-	disconnectClient(cl, reason);
-	removeClientFromChannels(cl, reason);
-	cl.setShouldDisconnect(true);
-}
 
 //--------JOIN--------
 
