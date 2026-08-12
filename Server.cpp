@@ -277,5 +277,5 @@ serv::~serv()
 	for (std::map<std::string, Channel*>::iterator it = _channelList.begin(); it != _channelList.end(); it++)
 		delete it->second;
 	close(_socketFd);
-	std::cout << "serv destructor called" << std::endl;
+	std::cout << "\nserv destructor called" << std::endl;
 }

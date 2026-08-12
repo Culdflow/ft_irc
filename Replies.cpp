@@ -28,7 +28,7 @@ std::string Replies::myInfo(const std::string &nick)
 
 std::string Replies::isSupport(const std::string &nick)
 {
-    return field("005", nick, " :CHANTYPES=# CHANMODES=k,l,it :are supported by this server");
+    return field("005", nick, " :CHANTYPES=# CHANMODES=k,l,i,t :are supported by this server");
 }
 
 std::string Replies::notopic(const std::string& nick, const std::string& channel)

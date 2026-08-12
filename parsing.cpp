@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parsing.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: juliette-malaval <juliette-malaval@stud    +#+  +:+       +#+        */
+/*   By: jmalaval <jmalaval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/10 11:01:34 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/07/27 16:48:40 by juliette-ma      ###   ########.fr       */
+/*   Updated: 2026/08/12 15:16:40 by jmalaval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,6 @@ Message parseCommand(std::string& raw) {
         size_t end = line.find(' ');
         if (end == 1 || end == std::string::npos)
             return msg;
-        // mettre un message d'erreur ? Signifie que la commande a un prefix puis rien apres, pas un code d'erreur classique dans IRC
         msg.prefix = line.substr(1, end - 1);
         pos = end + 1;        
     }

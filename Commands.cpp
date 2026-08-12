@@ -285,6 +285,11 @@ void Commands::removeClientFromChannels(client& cl, const std::string& reason)
 			_serv->getChannelList().erase((*it)->getName());
 			delete *it;
 		}
+		else if ((*it)->getOperatorsList().empty())
+		{
+			std::vector<client*>::iterator client = (*it)->getUserList().begin();
+			(*it)->add_operator(**client);
+		}
 	}
 }
 
@@ -342,7 +347,7 @@ void Commands::mess_join(client &cl, Channel *cha)
 	}
 	line.erase(line.size() - 1);
 	sendReply(cl, line);
-	line = "366"  + cl.getRealName() + " " + (*cha).getName() + " :End of NAMES list";
+	line = "366 "  + cl.getRealName() + " " + (*cha).getName() + " :End of NAMES list";
 	sendReply(cl, line);
 }
 
@@ -612,6 +617,11 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));
 		return;
 	}
+	if (recipient == &cl)
+	{
+		sendReply(cl, "Error: you cannot KICK yourself");
+		return;
+	}
 	if (channel.isOperator(*recipient))
 		channel.removeOperator(*recipient);
 	channel.removeUser(*recipient);
@@ -624,8 +634,17 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 	std::string kickLine = Relay::kick(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), target, reason);
 	sendLine(*recipient, kickLine);
 	broadcastToChannel(kickLine, &channel);
+	if (channel.getNumberOfUsers() == 0)
+	{
+		_serv->getChannelList().erase(channel.getName());
+		delete &channel;
+	}
+	else if (channel.getOperatorsList().empty())
+	{
+		std::vector<client*>::iterator client = channel.getUserList().begin();
+		channel.add_operator(**client);
+	}
 }
-
 
 
 //--------TOPIC--------
