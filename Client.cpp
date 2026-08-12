@@ -104,7 +104,7 @@ const std::string& client::getRealName() const {
 	return _realName;
 }
 
-std::vector<Channel *> client::getChannels() const
+std::vector<Channel *>& client::getChannels()
 {
     return _channelList;
 }

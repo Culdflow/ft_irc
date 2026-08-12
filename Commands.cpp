@@ -208,7 +208,7 @@ void Commands::cmdNICK(client& cl, Message msg) {
 	if (wasRegistered)
 	{
 		std::string nickLine = Relay::nickChange(oldPrefix, newNick);
-		std::vector<Channel*> channels = cl.getChannels();
+		std::vector<Channel*>& channels = cl.getChannels();
 		if (channels.empty())
 			sendLine(cl, nickLine);
 		else
@@ -300,7 +300,6 @@ void Commands::cmdQUIT(client& cl, Message msg) {
 		reason = "Client Quit";
 	else
 		reason = msg.params[0];
-	disconnectClient(cl, reason);
 	removeClientFromChannels(cl, reason);
 	cl.setShouldDisconnect(true);
 }

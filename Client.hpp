@@ -41,7 +41,7 @@ class	client
 		const std::string& 	getUsername() const;
 		const std::string& 	getRealName() const;
 		std::string& 		getInputBuf();
-		std::vector<Channel *> getChannels() const;
+		std::vector<Channel *>& getChannels();
 		//SETTER
 		void	setNick(std::string newNick);
 		void	setUsername(std::string newUsername);
