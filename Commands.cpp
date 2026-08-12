@@ -326,11 +326,11 @@ void Commands::mess_join(client &cl, Channel *cha)
 	std::string line = (*cha).getTopic();
 	std::string topic = (*cha).getTopic();
 	if(topic.empty())
-		line = "331 " + cl.getRealName() + " " + (*cha).getName() + " :No topic is set";
+		line = "331 " + cl.getNick() + " " + (*cha).getName() + " :No topic is set";
 	else
-		line = "332 " + cl.getRealName() + " " + (*cha).getName() + " :" + topic;
+		line = "332 " + cl.getNick() + " " + (*cha).getName() + " :" + topic;
 	sendReply(cl, line);
-	line = "353 " + cl.getRealName() + " = " + (*cha).getName() + " :";
+	line = "353 " + cl.getNick() + " = " + (*cha).getName() + " :";
 	std::vector<client*> userList = (*cha).getUserList();
 	for(std::vector<client*>::iterator it = userList.begin(); it < userList.end(); it++)
 	{
@@ -342,7 +342,7 @@ void Commands::mess_join(client &cl, Channel *cha)
 	}
 	line.erase(line.size() - 1);
 	sendReply(cl, line);
-	line = "366"  + cl.getRealName() + " " + (*cha).getName() + " :End of NAMES list";
+	line = "366 "  + cl.getNick() + " " + (*cha).getName() + " :End of NAMES list";
 	sendReply(cl, line);
 }
 
