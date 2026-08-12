@@ -287,8 +287,9 @@ void Commands::removeClientFromChannels(client& cl, const std::string& reason)
 		}
 		else if ((*it)->getOperatorsList().empty())
 		{
-			std::vector<client*>::iterator client = (*it)->getUserList().begin();
-			(*it)->add_operator(**client);
+			std::vector<client*> remainingUsers = (*it)->getUserList();
+			if (!remainingUsers.empty())
+				(*it)->add_operator(*remainingUsers.front());
 		}
 	}
 }
@@ -641,8 +642,9 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 	}
 	else if (channel.getOperatorsList().empty())
 	{
-		std::vector<client*>::iterator client = channel.getUserList().begin();
-		channel.add_operator(**client);
+		std::vector<client*> remainingUsers = channel.getUserList();
+		if (!remainingUsers.empty())
+			channel.add_operator(*remainingUsers.front());
 	}
 }
 

@@ -60,7 +60,7 @@ class Channel
 		std::string         getChannelKey() const;
 		unsigned int        getUserLimit() const;
 		std::string         getTopic() const;
-		std::vector<client*> getUserList() const;
+		std::vector<client*>& getUserList();
 		std::vector<client*> getOperatorsList() const;
         unsigned int        getNumberOfUsers() const;
 

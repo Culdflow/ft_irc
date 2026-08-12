@@ -149,7 +149,7 @@ std::string Channel::getTopic() const
     return _topic;
 }
 
-std::vector<client*> Channel::getUserList() const {
+std::vector<client*>& Channel::getUserList() {
     return _users;
 }
 std::vector<client*> Channel::getOperatorsList() const {
