@@ -440,7 +440,6 @@ void Commands::cmdINVITE(client &cl, Message msg, Channel &channel)
 		return;
 	}
 	channel.add_guest(*recipient);
-	// recipient->addChannel(&channel);
 	sendLine(*recipient, Relay::invite(Relay::prefix(cl.getNick(), cl.getUsername()), target, channel.getName()));
 	sendReply(cl, Replies::inviting(cl.getNick(), channel.getName(), target));
 }
@@ -556,12 +555,16 @@ void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
 	}
 	else if (msg.params[1][0] == '-')
 	{
+		if (recipient == &cl)
+		{
+			sendReply(cl, "Error: you cannot remove your operator status");
+			return;
+		}
 		if (channel.isOperator(*recipient))
 		{
 			channel.removeOperator(*recipient);
 			broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]), &channel);
 		}
-
 	}
 }
 	
@@ -584,7 +587,7 @@ void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
 		{
 			channel.setUserLimit(limit);
 			channel.setIsLimited(true);
-			broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
+			broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]), &channel);
 		}
 	}
 	if (msg.params[1][0] == '-')
@@ -715,15 +718,23 @@ void Commands::dispatch(client& cl, Message msg)
 		cmdPONG(cl, msg);
 		return;
 	}
-	if (!cl.isUsernameSet() || !cl.isNickSet() || !cl.isPaswdCorrect())
-	{
+	if (!cl.isPaswdCorrect())
+	{	
 		if (msg.command == "PASS")
 			cmdPASS(cl, msg);
-		else if (msg.command == "NICK")
+		else
+		{
+			sendReply(cl, Replies::notRegistered(selfNick(cl)));
+			return;
+		}
+	}
+	else if (!cl.isUsernameSet() || !cl.isNickSet())
+	{
+		if (msg.command == "NICK")
 			cmdNICK(cl, msg);
 		else if (msg.command == "USER")
 			cmdUSER(cl, msg);
-		else if (cmd_exist(msg.command) == true)
+		else
 		{
 			sendReply(cl, Replies::notRegistered(selfNick(cl)));
 			return;
