@@ -493,11 +493,6 @@ void 	Commands::cmdMODE(client& cl, Message msg, Channel& channel) {
 		cmdOMODE(cl, msg, channel);
 	else if (c == 'l')
 		cmdLMODE(cl, msg, channel);
-	
-	if (msg.params.size() > 2)
-		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]), &channel);
-	else
-		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 }
 
 void 	Commands::cmdIMODE(client&cl, Message msg, Channel &channel) {
@@ -506,6 +501,7 @@ void 	Commands::cmdIMODE(client&cl, Message msg, Channel &channel) {
 		channel.setInviteOnly(true);
 	else if (msg.params[1][0] == '-')
 		channel.setInviteOnly(false);
+	broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 }
 
 void 	Commands::cmdTMODE(client&cl, Message msg, Channel &channel) {
@@ -514,6 +510,7 @@ void 	Commands::cmdTMODE(client&cl, Message msg, Channel &channel) {
 		channel.setTopicRestricted(true);
 	else if (msg.params[1][0] == '-')
 		channel.setTopicRestricted(false);
+	broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 }
 
 void 	Commands::cmdKMODE(client&cl, Message msg, Channel &channel) {
@@ -524,10 +521,14 @@ void 	Commands::cmdKMODE(client&cl, Message msg, Channel &channel) {
 			sendReply(cl, Replies::needMoreParams(cl.getNick(), "MODE"));
 			return ;
 		}
-		channel.setChannelKey(msg.params[2]); 
+		channel.setChannelKey(msg.params[2]);
+		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 	}
-	else if (msg.params[1][0] == '-')
+	else if (msg.params[1][0] == '-') 
+	{
 		channel.setChannelKey(key);
+		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
+	}
 }
 
 void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
@@ -539,10 +540,8 @@ void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
 	const std::string& target = msg.params[2];
 	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
-	{
-		sendReply(cl, Replies::noSuchNick(cl.getNick(), target));
 		return;
-	}	if (!channel.user_present(*recipient))
+	if (!channel.user_present(*recipient))
 	{
 		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));
 		return;
@@ -550,12 +549,19 @@ void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
 	if (msg.params[1][0] == '+')
 	{
 		if (!channel.isOperator(*recipient))
+		{
 			channel.add_operator(*recipient);
+			broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]), &channel);
+		}
 	}
 	else if (msg.params[1][0] == '-')
 	{
 		if (channel.isOperator(*recipient))
+		{
 			channel.removeOperator(*recipient);
+			broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], msg.params[2]), &channel);
+		}
+
 	}
 }
 	
@@ -578,12 +584,14 @@ void 	Commands::cmdLMODE(client&cl, Message msg, Channel &channel) {
 		{
 			channel.setUserLimit(limit);
 			channel.setIsLimited(true);
+			broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 		}
 	}
 	if (msg.params[1][0] == '-')
 	{
 		channel.setUserLimit(INT_MAX);
 		channel.setIsLimited(false);
+		broadcastToChannel(Relay::mode(Relay::prefix(cl.getNick(), cl.getUsername()), channel.getName(), msg.params[1], ""), &channel);
 	}
 }
 
@@ -610,10 +618,7 @@ void Commands::cmdKICK(client &cl, Message msg, Channel& channel)
 	const std::string& target = msg.params[1];
 	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
-	{
-		sendReply(cl, Replies::noSuchNick(cl.getNick(), target));
 		return;
-	}
 	if (!channel.user_present(*recipient))
 	{
 		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));
