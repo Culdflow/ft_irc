@@ -1,5 +1,5 @@
-#include "Commands.hpp"
-#include "Server.hpp"
+#include "../include/Commands.hpp"
+#include "../include/Server.hpp"
 
 
 //HELPER-----------------------------------------------------------

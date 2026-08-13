@@ -2,7 +2,6 @@
 #define COMMANDS_HPP
 
 #include "ft_irc.hpp"
-#include "utils.hpp"
 #include "Replies.hpp"
 #include <cctype> 
 #include <climits>

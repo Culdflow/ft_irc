@@ -1,4 +1,4 @@
-#include "Channels.hpp"
+#include "../include/Channels.hpp"
 
 Channel::Channel() : _name(""), _inviteOnly(false), _topicRestricted(false), _userLimit(INT_MAX), _isLimited(false)
 {

@@ -3,7 +3,6 @@
 
 #include "ft_irc.hpp"
 #include "Channels.hpp"
-#include "utils.hpp"
 #include "Commands.hpp"
 #include <cstring>
 #include <iostream>

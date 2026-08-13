@@ -1,5 +1,5 @@
 
-#include "ft_irc.hpp"
+#include "../include/ft_irc.hpp"
 
 static bool parsePort(const std::string& argPort) {
     if (argPort.empty())

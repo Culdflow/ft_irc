@@ -1,4 +1,4 @@
-#include "Replies.hpp"
+#include "../include/Replies.hpp"
 
 static std::string field(const std::string& code, const std::string& nick, const std::string& rest)
 {
