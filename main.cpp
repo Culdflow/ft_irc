@@ -1,5 +1,5 @@
-#include "ft_irc.hpp"
-#include "Server.hpp"
+#include "include/ft_irc.hpp"
+#include "include/Server.hpp"
 #include <cctype> 
 
 

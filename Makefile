@@ -3,13 +3,13 @@ CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++98
 
 SRC = 	main.cpp 		\
-		parsing.cpp 	\
-		Server.cpp 		\
-		Client.cpp 		\
-		Channels.cpp	\
-		Commands.cpp	\
-		Replies.cpp		\
-		utils.cpp
+		src/parsing.cpp 	\
+		src/Server.cpp 		\
+		src/Client.cpp 		\
+		src/Channels.cpp	\
+		src/Commands.cpp	\
+		src/Replies.cpp		\
+		src/utils.cpp
 
 OBJ = $(SRC:.cpp=.o)
 
