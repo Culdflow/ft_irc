@@ -524,7 +524,7 @@ void 	Commands::cmdKMODE(client&cl, Message msg, Channel &channel) {
 			sendReply(cl, Replies::needMoreParams(cl.getNick(), "MODE"));
 			return ;
 		}
-		channel.setChannelKey(msg.params[2]); //key a verifier ? 
+		channel.setChannelKey(msg.params[2]); 
 	}
 	else if (msg.params[1][0] == '-')
 		channel.setChannelKey(key);
@@ -539,8 +539,10 @@ void 	Commands::cmdOMODE(client&cl, Message msg, Channel &channel) {
 	const std::string& target = msg.params[2];
 	client* recipient = getUser(cl, target);
 	if (recipient == NULL)
+	{
+		sendReply(cl, Replies::noSuchNick(cl.getNick(), target));
 		return;
-	if (!channel.user_present(*recipient))
+	}	if (!channel.user_present(*recipient))
 	{
 		sendReply(cl, Replies::userNotInChannel(cl.getNick(), target, channel.getName()));
 		return;
