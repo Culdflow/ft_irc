@@ -1,12 +1,14 @@
+*This project has been created as part of the 42 curriculum by [Dfeve, Jpecquer, Jmalaval].*
+
 # IRC
 
 An Internet Relay Chat (IRC) server and client project developed as part of the 42 curriculum.
 
-## 📖 About
+## Description
 
 This project consists of implementing an IRC server that follows the IRC protocol, allowing multiple clients to connect, communicate, and interact through channels.
 
-The main goal is to understand how network applications work by handling:
+The main goal is to understand how network applications work under the hood, by handling:
 
 - TCP connections
 - Multiple clients simultaneously
@@ -17,33 +19,34 @@ The main goal is to understand how network applications work by handling:
 - Client disconnections
 - Error handling
 
-The server is designed to be compatible with standard IRC clients.
+The server is designed to be compatible with standard IRC clients (irssi, HexChat, WeeChat, etc.).
 
-## 🚀 Features
+### Features
 
 - TCP/IP socket communication
 - Multiple simultaneous client connections
-- Non-blocking I/O
+- Non-blocking I/O (via `poll()`)
 - Client authentication
 - Nickname and username management
 - Private messages
 - Channel creation and management
 - Channel joining and leaving
-- Channel operators
-- Operator commands
+- Channel operators and operator commands
 - User modes and channel modes
 - IRC protocol-compliant responses
 - Graceful client disconnection
 
-## 🛠️ Technologies
+### Technologies
 
 - **Language:** C++
 - **Standard:** C++98
 - **Networking:** TCP sockets
-- **Multiplexing:** poll()
+- **Multiplexing:** `poll()`
 - **Build system:** Make
 
-## 📦 Installation
+## Instructions
+
+### Installation
 
 Clone the repository:
 
@@ -58,7 +61,16 @@ Compile the project:
 make
 ```
 
-## ▶️ Usage
+Available Makefile rules:
+
+```bash
+make        # compiles the project
+make clean  # removes compiled object files
+make fclean # removes object files and the executable
+make re     # recompiles everything from scratch
+```
+
+### Execution
 
 Start the IRC server with a port and a password:
 
@@ -66,31 +78,42 @@ Start the IRC server with a port and a password:
 ./ircserv <port> <password>
 ```
 
-For example:
+Example:
 
 ```bash
 ./ircserv 6667 password
 ```
 
-The server will then listen for incoming client connections on the specified port.
+The server then listens for incoming client connections on the specified port.
 
-You can connect using an IRC client such as irssi, HexChat, or WeeChat.
-
-Example with irssi:
+You can connect using any standard IRC client, for example irssi:
 
 ```bash
 irssi
 ```
 
-Then connect to the server:
+Then, inside irssi, connect to the server:
 
 ```
 /connect localhost 6667 password
 ```
 
-## 💬 Supported IRC Commands
+### Testing
 
-The server supports the main commands required by the project, including:
+1. Build the project with `make`.
+2. Run the server: `./ircserv 6667 password`.
+3. Connect several IRC clients and test:
+   - Client registration
+   - Nickname conflicts
+   - Channel creation
+   - Joining and leaving channels
+   - Private messages and channel messages
+   - Operator privileges
+   - Channel modes
+   - Client disconnections
+   - Multiple clients communicating simultaneously
+
+### Supported IRC commands
 
 | Command | Description |
 |---------|-------------|
@@ -107,9 +130,7 @@ The server supports the main commands required by the project, including:
 | MODE | Change user or channel modes |
 | QUIT | Disconnect from the server |
 
-## 🔐 Channel Modes
-
-Depending on the implementation, the server supports channel modes such as:
+### Channel modes
 
 - `i` — Invite-only channel
 - `t` — Topic restricted to operators
@@ -117,75 +138,41 @@ Depending on the implementation, the server supports channel modes such as:
 - `o` — Channel operator privileges
 - `l` — User limit
 
-## 🧪 Testing
+## Resources
 
-Build the project:
+### Classic references
 
-```bash
-make
-```
+- [RFC 1459 — Internet Relay Chat Protocol](https://datatracker.ietf.org/doc/html/rfc1459)
+- [RFC 2812 — Internet Relay Chat: Client Protocol](https://datatracker.ietf.org/doc/html/rfc2812)
+- [RFC 2813 — Internet Relay Chat: Server Protocol](https://datatracker.ietf.org/doc/html/rfc2813)
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- `man poll`, `man socket`, `man bind`, `man listen`, `man accept` — reference manuals used throughout development
+- [Modern IRC documentation (modern.ircdocs.horse)](https://modern.ircdocs.horse/)
 
-Run the server:
+### AI usage
 
-```bash
-./ircserv 6667 password
-```
+An AI assistant (Claude) was used solely for help writing and structuring this README.md file, specifically for:
 
-Then connect several IRC clients and test:
+- Organizing the content into the required sections (Description, Instructions, Resources).
+- Improving clarity and wording of the explanations.
 
-- Client registration
-- Nickname conflicts
-- Channel creation
-- Joining and leaving channels
-- Private messages
-- Channel messages
-- Operator privileges
-- Channel modes
-- Client disconnections
-- Multiple clients communicating simultaneously
+The project's design, implementation, and all source code were written and validated entirely by the team without AI assistance.
 
-## 🧹 Cleaning
+## What we learned
 
-Remove compiled object files:
+Through this project, we gained practical experience with:
 
-```bash
-make clean
-```
+- Network programming and TCP/IP communication
+- Socket management and non-blocking I/O
+- Event-driven programming
+- Concurrent client handling
+- Protocol parsing
+- Object-oriented C++ (C++98)
+- Error handling
+- Collaborative software development
 
-Remove object files and the executable:
-
-```bash
-make fclean
-```
-
-Recompile everything from scratch:
-
-```bash
-make re
-```
-
-## 👥 Team
-
-This project was developed as part of the 42 curriculum.
+## Team
 
 - [Dfeve]
 - [Jpecquer]
 - [Jmalaval]
-
-## 📚 What We Learned
-
-Through this project, we gained practical experience with:
-
-- Network programming
-- TCP/IP communication
-- Socket management
-- Event-driven programming
-- Concurrent client handling
-- Protocol parsing
-- Object-oriented C++
-- Error handling
-- Collaborative software development
-
-## 📜 License
-
-This project was created for educational purposes as part of the 42 curriculum.
