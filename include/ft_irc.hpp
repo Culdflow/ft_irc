@@ -18,9 +18,10 @@ struct Message {
     std::vector<std::string> params; 	
 };
 
-// parsing
 void parseArguments(int ac, char **av);
 std::vector<Message> socketBufferParsing(client& Client, bool &closed);
 Message parseCommand(std::string& raw);
+
+bool cmd_exist(const std::string& cmd);
 
 #endif

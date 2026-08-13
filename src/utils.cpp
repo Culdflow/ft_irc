@@ -1,4 +1,4 @@
-#include "utils.hpp"
+#include "ft_irc.hpp"
 
 bool cmd_exist(const std::string& cmd)
 {

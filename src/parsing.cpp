@@ -1,14 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   parsing.cpp                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: jmalaval <jmalaval@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/10 11:01:34 by juliette-ma       #+#    #+#             */
-/*   Updated: 2026/08/12 15:16:40 by jmalaval         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
 #include "ft_irc.hpp"
 
@@ -45,8 +34,6 @@ void parseArguments(int ac, char **av) {
 }
 
       
-// reconstituer la commande a partir de ce qui est recu
-
 std::vector<Message> socketBufferParsing(client& Client, bool& closed) {
     char buf[512];
     int n = recv(Client.getSocketFd(), buf, sizeof(buf), 0);
@@ -72,8 +59,6 @@ std::vector<Message> socketBufferParsing(client& Client, bool& closed) {
     return vecMsgs;
 }
 
-// [':' prefix - optionnel SPACE] command [SPACE params] [SPACE ':' trailing]
-// return un msg vide en cas d'erreur
 Message parseCommand(std::string& raw) {
     Message msg;
     std::string line = raw;

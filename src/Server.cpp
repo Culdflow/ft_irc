@@ -109,7 +109,7 @@ void serv::acceptNewClient() {
 
 	if (getpeername(cl, (struct sockaddr*)&addr, &addr_len) == -1)
 	{
-		std::cerr << "errrrorrrrr getpeername" << std::endl;
+		std::cerr << "error getpeername" << std::endl;
 		close(cl);
 		return;
 	}
@@ -207,8 +207,8 @@ void	serv::run()
 		{
 			if (errno == EINTR)
 				continue;
-			std::cerr << "errrrorrrrr poll" << std::endl;
-			return ; //gerer les deconnexions etc
+			std::cerr << "error poll" << std::endl;
+			return ;
 		}
 		for (size_t i = 0; i < _pollFds.size(); i++)
 		{
