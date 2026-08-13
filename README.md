@@ -86,17 +86,8 @@ Example:
 
 The server then listens for incoming client connections on the specified port.
 
-You can connect using any standard IRC client, for example irssi:
+You can connect using hexchat
 
-```bash
-irssi
-```
-
-Then, inside irssi, connect to the server:
-
-```
-/connect localhost 6667 password
-```
 
 ### Testing
 
